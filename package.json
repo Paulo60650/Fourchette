@@ -1,0 +1,21 @@
+{
+  "name": "la-fourchette-test",
+  "version": "0.1.0",
+  "private": true,
+  "description": "La Fourchette — version de test Android (Capacitor)",
+  "scripts": {
+    "questions": "python3 build_questions.py && python3 build_app.py",
+    "android:add": "cap add android",
+    "android:sync": "cap sync android",
+    "android:apk": "cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.0.0"
+  }
+}

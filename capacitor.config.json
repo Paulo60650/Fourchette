@@ -1,0 +1,10 @@
+{
+  "appId": "app.fourchette.test",
+  "appName": "La Fourchette",
+  "webDir": "www",
+  "backgroundColor": "#12062B",
+  "android": {
+    "backgroundColor": "#12062B",
+    "allowMixedContent": false
+  }
+}
