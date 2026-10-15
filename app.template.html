@@ -337,6 +337,46 @@ html[data-skin="vif"] .rank.r1,html[data-skin="vif"] .rank.r2,html[data-skin="vi
 html[data-skin="vif"] .swatch i{box-shadow:0 0 0 2px rgba(255,255,255,.55)}
 html[data-skin="vif"] .knob{border-color:var(--plum)}
 html[data-skin="vif"] .toast{background:#fff;color:#1B0B38}
+
+/* Badges, animation, survie */
+.bov{position:absolute;inset:0;z-index:9;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,rgba(58,22,96,.86),rgba(10,4,22,.95));padding:24px;animation:fadein .3s both}
+.bov[hidden]{display:none}
+.bov .bx{position:relative;text-align:center;color:#fff;max-width:300px;width:100%}
+.bov .rays{position:absolute;left:50%;top:75px;width:340px;height:340px;margin:-170px 0 0 -170px;background:repeating-conic-gradient(from 0deg,rgba(255,214,102,.30) 0 8deg,transparent 8deg 24deg);-webkit-mask:radial-gradient(circle,#000 18%,transparent 68%);mask:radial-gradient(circle,#000 18%,transparent 68%);animation:spin 14s linear infinite}
+.bov .medal{width:150px;height:150px;margin:0 auto 18px;position:relative;animation:medalIn .95s cubic-bezier(.2,1.35,.3,1) both}
+.bov .medal svg{width:100%;height:100%;display:block;filter:drop-shadow(0 12px 26px rgba(0,0,0,.55))}
+.bov .medal:after{content:"";position:absolute;inset:6px;border-radius:50%;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.65) 50%,transparent 65%);background-size:250% 100%;animation:shine 1.5s .7s ease-out both;mix-blend-mode:overlay}
+.bov .k{font:700 13px var(--body);letter-spacing:.16em;text-transform:uppercase;color:#FFD666;animation:rise .5s .35s both}
+.bov h2{font:800 30px/1.1 var(--display);margin:6px 0 8px;animation:rise .5s .45s both}
+.bov p.dsc{font-size:16px;line-height:1.4;opacity:.92;animation:rise .5s .55s both}
+.bov .more{font-size:13px;opacity:.7;margin-top:10px}
+.bov .btn{margin-top:22px;background:#FFD666;color:#2B2130;animation:rise .5s .7s both}
+.pt{position:absolute;left:50%;top:75px;width:9px;height:9px;margin:-4px 0 0 -4px;border-radius:2px;opacity:0;animation:burst var(--d) var(--w) cubic-bezier(.15,.8,.3,1) both}
+@keyframes medalIn{0%{transform:scale(0) rotate(-220deg);opacity:0}55%{transform:scale(1.18) rotate(14deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+@keyframes burst{0%{transform:translate(0,0) rotate(0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) rotate(var(--r)) scale(.3);opacity:0}}
+@keyframes shine{from{background-position:140% 0}to{background-position:-40% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.bov .medal,.bov .medal:after,.pt,.bov .rays,.bov .k,.bov h2,.bov p.dsc,.bov .btn{animation:none!important}.pt{display:none}}
+.bgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 6px}
+.bgrid button{display:block;text-align:center;padding:0}
+.bgrid svg{width:100%;max-width:62px;height:auto;display:block;margin:0 auto 4px}
+.bgrid span{display:block;font-size:11px;font-weight:600;line-height:1.15;color:var(--ink)}
+.bgrid .lock svg{opacity:.38;filter:grayscale(1)}
+.bgrid .lock span{color:var(--ink2)}
+.bprog{height:6px;border-radius:3px;background:var(--track);overflow:hidden;margin:8px 0 4px}
+.bprog i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.g-surv{background:linear-gradient(135deg,#E8553A,#C23F69)}
+html[data-skin="vif"] .g-surv{background:linear-gradient(135deg,#FF6A3D,#FF3D7F)}
+.sndb{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--card);border:1px solid var(--line)}
+.sndb svg{width:18px;height:18px;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sndb[aria-pressed="false"]{opacity:.55}
+.qright{display:flex;align-items:center;gap:8px}
+.gain[hidden]{display:none}
+.rail.fixed .knob{width:12px;height:34px;top:5px;margin-left:-6px;border-radius:7px}
+.rail.fixed .fill{top:11px;height:22px;border-radius:8px;cursor:grab;opacity:.92}
+.rail.fixed .bar{top:17px;height:10px}
 </style>
 
 <div class="phone" id="phone">
@@ -348,6 +388,7 @@ html[data-skin="vif"] .toast{background:#fff;color:#1B0B38}
     <button class="tab" data-tab="profile"><svg viewBox="0 0 24 24"><path d="M4 18V9m5 9V5m5 13v-7m5 7V8"/></svg>Profil</button>
   </nav>
   <div class="sheetbg" id="sheetbg" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+  <div class="bov" id="badgeov" hidden role="dialog" aria-modal="true" aria-live="assertive"></div>
   <div class="toast" id="toast" hidden></div>
 </div>
 
@@ -374,7 +415,6 @@ var QDATA=/*QDATA*/null;
 var FM={y:fyear,i:fnum,d:fnice};
 var BANK=QDATA.q.map(function(e){return {id:e.i,dom:QDATA.themes[e.d],t:e.t,unit:e.u,kind:e.k==='y'?'lin':'log',min:e.a,max:e.b,truth:e.v,sc:e.c,ticks:e.tk,f:FM[e.f],fact:e.x,int:!!e.n}});
 var GL=5,NUMW={3:'Trois',5:'Cinq',10:'Dix'},MINW={3:'une minute',5:'deux minutes',10:'quatre minutes'};
-var BASE={'Sport':66,'Géographie':61,'Nature':55,'Transports':50,'Territoires':47,'Histoire':52,'Sciences':44,'Arts':40};
 var SHARE={'Sport':.22,'Géographie':.18,'Nature':.12,'Transports':.08,'Territoires':.10,'Histoire':.14,'Sciences':.10,'Arts':.06};
 var WORLD={week:{n:118430,t:[93.8,93.1,92.6,92.0,91.7,91.2,90.9,90.4,90.1,89.8]},season:{n:210900,t:[92.4,91.9,91.5,91.0,90.6,90.3,89.9,89.5,89.2,88.9]}};
 var W_NAMES=[['Aurore_L','FR'],['quokka42','CA'],['Théophile','BE'],['nanook','CH'],['Mathis.R','FR'],['olivier_b','FR'],['Maëlys','FR'],['sorbet','CA'],['Léon_K','LU'],['Jade.75','FR']];
@@ -383,7 +423,6 @@ var LEAGUES=[
  {name:'Les Voisins du 3e',code:'VOIS-83K',m:[['Camille',71,68,44,160],['Inès',66,64,39,142],['Vous',0,0,0,0],['Malik',49,50,31,118],['Théo',41,44,22,95]]},
  {name:'Bureau Data',code:'DATA-27P',m:[['Julie',74,72,52,201],['Samir',69,68,47,180],['Nadia',62,60,40,154],['Vous',0,0,0,0],['Paul',51,50,36,139],['Lucie',46,47,28,110],['Aurélien',33,38,15,70]]}
 ];
-var PROFILE={weeks:[48,52,50,57,55,60,58,61],dom:[['Sport',70],['Géographie',66],['Nature',58],['Histoire',52],['Sciences',45],['Arts',40]]};
 
 /* Echelles et score */
 function pos(q,v){return q.kind==='lin'?(v-q.min)/(q.max-q.min):Math.log(v/q.min)/Math.log(q.max/q.min)}
@@ -412,19 +451,25 @@ function sum(a){return a.reduce(function(x,y){return x+y.pts},0)}
 var S={skin:'vif',tab:'home',view:'home',league:0,range:'week',wr:'week',ws:'world',wt:'all',wm:'avg',cur:{lo:0,hi:0}};
 var G={set:[],ans:[],qi:0,theme:null,before:0};
 var SEEN={},HIST=[],ST={};
-var SESS={};
-function resetStats(){DN.forEach(function(d){ST[d]={n:10,s:BASE[d]*10};SESS[d]=0});SEEN={};HIST=[]}
-var FLAGS=[],LS_KEY='fourchette.test.v1';
-function save(){try{localStorage.setItem(LS_KEY,JSON.stringify({ST:ST,SESS:SESS,HIST:HIST,SEEN:SEEN,skin:S.skin,GL:GL,FLAGS:FLAGS}))}catch(e){}}
-function load(){try{var d=JSON.parse(localStorage.getItem(LS_KEY)||'null');if(!d)return;if(d.ST)ST=d.ST;if(d.SESS)SESS=d.SESS;if(d.HIST)HIST=d.HIST;if(d.SEEN)SEEN=d.SEEN;if(d.skin)S.skin=d.skin;if(d.GL)GL=d.GL;if(d.FLAGS)FLAGS=d.FLAGS}catch(e){}}
+var LOG=[],MINQ=10,BADGES={},SURV={best:0,runs:0},ACH={perfect:0,gold:0,marathon:0},PEND=[],SND={m:1,f:1};
+function rk(m){return m.ok?m.rank:null}
+function resetStats(){DN.forEach(function(d){ST[d]={n:0,s:0}});SEEN={};HIST=[];LOG=[];BADGES={};SURV={best:0,runs:0};ACH={perfect:0,gold:0,marathon:0};PEND=[]}
+function dkey(t){var d=new Date(t);return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+function streakN(){var days={};LOG.forEach(function(e){days[dkey(e.t)]=1});var n=0,t=Date.now();if(!days[dkey(t)])t-=864e5;while(days[dkey(t)]){n++;t-=864e5}return n}
+function logOf(th,since){return LOG.filter(function(e){return (!th||th==='all'||e.d===th)&&(!since||e.t>=since)})}
+var FLAGS=[],LS_KEY='fourchette.test.v2';
+function save(){try{localStorage.setItem(LS_KEY,JSON.stringify({BADGES:BADGES,SURV:SURV,ACH:ACH,SND:SND,ST:ST,LOG:LOG,HIST:HIST,SEEN:SEEN,skin:S.skin,GL:GL,FLAGS:FLAGS}))}catch(e){}}
+function load(){try{var d=JSON.parse(localStorage.getItem(LS_KEY)||'null');if(!d)return;if(d.ST)ST=d.ST;if(d.LOG)LOG=d.LOG;if(d.BADGES)BADGES=d.BADGES;if(d.SURV)SURV=d.SURV;if(d.ACH)ACH=d.ACH;if(d.SND)SND=d.SND;if(d.HIST)HIST=d.HIST;if(d.SEEN)SEEN=d.SEEN;if(d.skin)S.skin=d.skin;if([0,3,5,10].indexOf(d.GL)>=0)GL=d.GL;if(d.FLAGS)FLAGS=d.FLAGS}catch(e){}}
 resetStats();load();
 function avgOf(th){
-  if(th&&th!=='all')return ST[th].s/ST[th].n;
-  var n=0,s=0;DN.forEach(function(d){n+=ST[d].n;s+=ST[d].s});return s/n;
+  if(th&&th!=='all')return ST[th].n?ST[th].s/ST[th].n:0;
+  var n=0,s=0;DN.forEach(function(d){n+=ST[d].n;s+=ST[d].s});return n?s/n:0;
 }
+function ptsTot(){var t=0;DN.forEach(function(d){t+=ST[d].s});return t}
+function qOf(th){if(th&&th!=='all')return ST[th].n;return qCount()}
 function qCount(){var n=0;DN.forEach(function(d){n+=ST[d].n});return n}
 function totalOf(r,th){
-  var t=0;DN.forEach(function(d){if(th&&th!=='all'&&th!==d)return;t+=r==='season'?ST[d].s:BASE[d]*2+SESS[d]});return Math.round(t);
+  var t=0;DN.forEach(function(d){if(th&&th!=='all'&&th!==d)return;t+=r==='season'?ST[d].s:logOf(d,Date.now()-7*864e5).reduce(function(x,e){return x+e.p},0)});return Math.round(t);
 }
 var CUM={week:{med:600,t:[9320,8870,8540,8210,7960,7710,7480,7250,7040,6830]},season:{med:3000,t:[48210,45980,44120,42900,41350,40100,38870,37640,36500,35480]}};
 function myCum(r,th){
@@ -433,7 +478,7 @@ function myCum(r,th){
   var N=Math.round(WORLD[r].n*share*(fr?.6:1)),tot=totalOf(r,th),med=CUM[r].med*share;
   var p=1/(1+Math.exp(-Math.log(Math.max(1,tot)/med)/0.8)),rank=Math.max(3,Math.round(N*(1-p)));
   var pct=Math.max(1,Math.round(rank/N*100));
-  return {tot:tot,qs:Math.round(tot/(avgOf(th)||1)),rank:rank,n:N,pct:pct,better:Math.min(99,100-pct)};
+  return {ok:tot>0,tot:tot,qs:Math.round(tot/(avgOf(th)||1)),rank:rank,n:N,pct:pct,better:Math.min(99,100-pct)};
 }
 function rankOf(avg,N){var p=1/(1+Math.exp(-(avg-50)/9));return Math.max(7,Math.round(N*(1-p)))}
 function myWorld(r,th){
@@ -441,14 +486,187 @@ function myWorld(r,th){
   var fr=S.ws==='france',share=th==='all'?1:SHARE[th];
   var N=Math.round(WORLD[r].n*share*(fr?.6:1)),avg=avgOf(th),rank=rankOf(avg,N);
   var pct=Math.max(1,Math.round(rank/N*100));
-  return {avg:avg,rank:rank,n:N,pct:pct,better:Math.min(99,100-pct)};
+  var qn=qOf(th);
+  return {ok:qn>=MINQ,need:Math.max(0,MINQ-qn),avg:avg,rank:rank,n:N,pct:pct,better:Math.min(99,100-pct)};
 }
 
 function applySkin(){document.documentElement.setAttribute('data-skin',S.skin==='vif'?'vif':'warm')}
 function frDate(){var d=new Date();return d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}
 
 /* Chrono */
-var TL=20,tmr=null;
+var TL=25,tmr=null;
+
+/* ===== Son : tout est synthétisé, aucun fichier audio ===== */
+var AU={ctx:null,mus:null,sfx:null,mode:null,timer:null,next:0,step:0,playing:false};
+function mtof(m){return 440*Math.pow(2,(m-69)/12)}
+function auInit(){
+  if(AU.ctx)return AU.ctx;
+  var C=window.AudioContext||window.webkitAudioContext;if(!C)return null;
+  try{AU.ctx=new C();
+    AU.mus=AU.ctx.createGain();AU.mus.gain.value=0;AU.mus.connect(AU.ctx.destination);
+    AU.sfx=AU.ctx.createGain();AU.sfx.gain.value=.55;AU.sfx.connect(AU.ctx.destination);
+  }catch(e){AU.ctx=null}
+  return AU.ctx;
+}
+function tone(dest,f,t,dur,type,vol,cut){
+  var c=AU.ctx,o=c.createOscillator(),g=c.createGain(),fl=c.createBiquadFilter();
+  o.type=type;o.frequency.value=f;fl.type='lowpass';fl.frequency.value=cut||3200;
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol,t+0.012);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(fl);fl.connect(g);g.connect(dest);o.start(t);o.stop(t+dur+0.05);
+}
+function hat(t,vol){
+  var c=AU.ctx,n=Math.floor(c.sampleRate*0.04),b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0),i;
+  for(i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);
+  var s=c.createBufferSource(),g=c.createGain(),hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=7000;
+  g.gain.value=vol;s.buffer=b;s.connect(hp);hp.connect(g);g.connect(AU.mus);s.start(t);
+}
+function kick(t,vol){
+  var c=AU.ctx,o=c.createOscillator(),g=c.createGain();
+  o.type='sine';o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(45,t+0.12);
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.2);
+  o.connect(g);g.connect(AU.mus);o.start(t);o.stop(t+0.25);
+}
+var PRE={
+  play:{bpm:98,vol:.20,ch:[[57,60,64,69],[53,57,60,65],[60,64,67,72],[55,59,62,67]],bs:[45,41,48,43],
+        mel:[[76,0,0,72,0,74,0,0],[72,0,0,69,0,72,0,0],[76,0,79,0,76,0,72,0],[74,0,0,71,0,74,0,67]],ar:[0,1,2,3,2,1,2,3],drum:0},
+  surv:{bpm:126,vol:.21,ch:[[62,65,69,74],[58,62,65,70],[65,69,72,77],[60,64,67,72]],bs:[38,34,41,36],
+        mel:[[81,0,77,0,81,0,84,0],[77,0,74,0,77,0,81,0],[84,0,81,0,77,0,81,0],[79,0,76,0,79,0,84,0]],ar:[0,2,1,3,0,2,1,3],drum:1}
+};
+function auStep(st,t,P){
+  var bar=Math.floor(st/8)%4,i=st%8,ch=P.ch[bar];
+  if(i===0){ // nappe
+    ch.slice(0,3).forEach(function(m){tone(AU.mus,mtof(m-12),t,60/P.bpm*3.8,'sine',.05,900)});
+  }
+  tone(AU.mus,mtof(ch[P.ar[i]]+(P.drum?0:0)),t,60/P.bpm*0.55,'triangle',.11,2600);
+  var m=P.mel[bar][i];if(m)tone(AU.mus,mtof(m),t,60/P.bpm*0.9,'sine',.10,3800);
+  if(i===0||i===4||(P.drum&&(i===2||i===6)))tone(AU.mus,mtof(P.bs[bar]),t,60/P.bpm*0.8,'triangle',.20,500);
+  if(P.drum){if(i%4===0)kick(t,.5);if(i%2===1)hat(t,.10)}
+  else if(i%2===1)hat(t,.05);
+}
+function auTick(){
+  var c=AU.ctx;if(!c||!AU.playing)return;
+  var P=PRE[AU.mode],sd=60/P.bpm/2;
+  while(AU.next<c.currentTime+0.3){auStep(AU.step,AU.next,P);AU.next+=sd;AU.step++}
+}
+function musicStart(mode){
+  if(!SND.m)return;
+  var c=auInit();if(!c)return;
+  try{c.resume()}catch(e){}
+  if(AU.playing&&AU.mode===mode)return;
+  var P=PRE[mode];
+  if(!AU.playing){AU.next=c.currentTime+0.12;AU.step=0;AU.timer=setInterval(auTick,70)}
+  else{AU.next=c.currentTime+0.12;AU.step=0}
+  AU.mode=mode;AU.playing=true;
+  AU.mus.gain.cancelScheduledValues(c.currentTime);AU.mus.gain.setTargetAtTime(P.vol,c.currentTime,0.5);
+}
+function musicStop(){
+  if(!AU.playing||!AU.ctx)return;
+  AU.playing=false;var c=AU.ctx;
+  AU.mus.gain.cancelScheduledValues(c.currentTime);AU.mus.gain.setTargetAtTime(0,c.currentTime,0.25);
+  clearInterval(AU.timer);AU.timer=null;
+}
+function jingle(){
+  if(!SND.f)return;
+  var c=auInit();if(!c)return;
+  try{c.resume()}catch(e){}
+  var t=c.currentTime+0.02;
+  if(AU.playing){AU.mus.gain.cancelScheduledValues(t);AU.mus.gain.setTargetAtTime(.04,t,.05);AU.mus.gain.setTargetAtTime(PRE[AU.mode].vol,t+2.6,.5)}
+  [[72,0],[76,.11],[79,.22],[84,.33],[88,.5]].forEach(function(n){
+    tone(AU.sfx,mtof(n[0]),t+n[1],.9,'triangle',.28,5200);
+    tone(AU.sfx,mtof(n[0]+12),t+n[1],.6,'sine',.10,6000);
+  });
+  [96,100,103,108].forEach(function(m,i){tone(AU.sfx,mtof(m),t+.75+i*.07,.5,'sine',.07,8000)});
+}
+function auSuspend(){try{if(AU.ctx)AU.ctx.suspend()}catch(e){}}
+function auResume(){try{if(AU.ctx&&(AU.playing||SND.f))AU.ctx.resume()}catch(e){}}
+document.addEventListener('visibilitychange',function(){if(document.hidden)auSuspend();else auResume()});
+
+/* ===== Badges ===== */
+var ICO={
+  star:['f','M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z'],
+  target:['s','M12 3a9 9 0 100 18 9 9 0 000-18zM12 7.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9zM12 11.2a.8.8 0 100 1.6.8.8 0 000-1.6z'],
+  bolt:['f','M13.5 2L5 13.5h6L10 22l9-12h-6.2z'],
+  flame:['f','M12 2.5c.8 3.2 4.6 5 4.6 9.3a4.6 4.6 0 01-9.2 0c0-1.6.7-2.8 1.6-3.8.2 1.3 1 2 1.8 2.2C10.5 8.2 10.8 5.3 12 2.5z'],
+  crown:['f','M3.5 18.5l-1-10 5 4 4.5-7 4.5 7 5-4-1 10z'],
+  clock:['s','M12 4a8 8 0 100 16 8 8 0 000-16zM12 8v4.6l3 1.7'],
+  book:['s','M4 5.5C6.5 4.4 9.5 4.5 12 6c2.5-1.5 5.5-1.6 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5zM12 6v13.5'],
+  trophy:['s','M8 4h8v5a4 4 0 01-8 0zM8 6H5v2a3 3 0 003 3M16 6h3v2a3 3 0 01-3 3M12 13v4M8.5 20h7'],
+  shield:['f','M12 2.8l7.2 3v5.4c0 4.6-3 8-7.2 10-4.2-2-7.2-5.4-7.2-10V5.8z']
+};
+var TIERS={
+  bronze:['#F0B27A','#B8672C','#7A3E14'],
+  silver:['#F4F7FB','#A9B4C6','#6B778C'],
+  gold:['#FFE48F','#EBAA2F','#A8660F'],
+  epic:['#FF9BE0','#9A5BFF','#4B2A9E']
+};
+function medal(b,locked){
+  var T=TIERS[b.tier],id='m'+b.id,ic=b.ic,glyph='';
+  if(ic.indexOf('n:')===0){var tx=ic.slice(2);glyph='<text x="50" y="'+(tx.length>3?60:63)+'" text-anchor="middle" style="font:800 '+(tx.length>3?24:tx.length>2?29:34)+'px var(--display);fill:#2B2130;opacity:.88">'+tx+'</text>'}
+  else{var g=ICO[ic];glyph='<g transform="translate(26 26) scale(2)" '+(g[0]==='f'?'fill="#2B2130" fill-opacity=".88"':'fill="none" stroke="#2B2130" stroke-opacity=".88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"')+'><path d="'+g[1]+'"/></g>'}
+  return '<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="'+id+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+T[0]+'"/><stop offset=".55" stop-color="'+T[1]+'"/><stop offset="1" stop-color="'+T[2]+'"/></linearGradient></defs>'+
+   '<circle cx="50" cy="50" r="46" fill="url(#'+id+')"/><circle cx="50" cy="50" r="38" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2"/><circle cx="50" cy="50" r="44.5" fill="none" stroke="#000" stroke-opacity=".18" stroke-width="1.5"/>'+glyph+'</svg>';
+}
+function maxRun(){var m=0,c=0;LOG.forEach(function(e){if(e.i){c++;if(c>m)m=c}else c=0});return m}
+function exCount(){return LOG.filter(function(e){return e.x&&e.i}).length}
+function themesSeen(){return DN.filter(function(d){return ST[d].n>0}).length}
+function specOk(){return DN.some(function(d){if(ST[d].n<20)return false;var l=logOf(d).filter(function(e){return !e.x});return l.length>=20&&l.reduce(function(x,e){return x+e.i},0)/l.length>=.75})?1:0}
+function B(id,n,d,tier,ic,max,cur){return {id:id,n:n,d:d,tier:tier,ic:ic,max:max,cur:cur}}
+var BD=[
+  B('q1','Premier pas','Répondre à votre première question.','bronze','star',1,qCount),
+  B('q10','Mise en jambes','Répondre à 10 questions.','bronze','n:10',10,qCount),
+  B('q50','Habitué','Répondre à 50 questions.','silver','n:50',50,qCount),
+  B('q100','Centurion','Répondre à 100 questions.','silver','n:100',100,qCount),
+  B('q250','Infatigable','Répondre à 250 questions.','gold','n:250',250,qCount),
+  B('q500','Érudit','Répondre à 500 questions.','gold','book',500,qCount),
+  B('q1000','Encyclopédie vivante','Répondre à 1 000 questions.','epic','book',1000,qCount),
+  B('g10','Régulier','Terminer 10 parties.','silver','trophy',10,function(){return HIST.length}),
+  B('g50','Assidu','Terminer 50 parties.','gold','trophy',50,function(){return HIST.length}),
+  B('d3','Trois jours de suite','Jouer 3 jours de suite.','bronze','flame',3,streakN),
+  B('d7','Semaine parfaite','Jouer 7 jours de suite.','silver','flame',7,streakN),
+  B('d30','Mois sans faute','Jouer 30 jours de suite.','epic','flame',30,streakN),
+  B('p1k','Mille points','Cumuler 1 000 points.','bronze','star',1000,ptsTot),
+  B('p10k','Dix mille points','Cumuler 10 000 points.','silver','star',10000,ptsTot),
+  B('p50k','Légende','Cumuler 50 000 points.','epic','crown',50000,ptsTot),
+  B('ex1','Dans le mille','Trouver une valeur exacte.','bronze','target',1,exCount),
+  B('ex10','Œil de lynx','Trouver 10 valeurs exactes.','gold','target',10,exCount),
+  B('t90','Tir groupé','Une fourchette juste à 90 points ou plus.','silver','target',1,function(){return LOG.some(function(e){return !e.x&&e.p>=90})?1:0}),
+  B('r5','Sans faute ×5','5 fourchettes justes d’affilée.','bronze','shield',5,maxRun),
+  B('r10','Sans faute ×10','10 fourchettes justes d’affilée.','silver','shield',10,maxRun),
+  B('r20','Sans faute ×20','20 fourchettes justes d’affilée.','gold','shield',20,maxRun),
+  B('perf','Partie parfaite','Une partie d’au moins 5 questions, toutes justes.','gold','crown',1,function(){return ACH.perfect}),
+  B('gold','Partie en or','Une partie d’au moins 5 questions à 80 points de moyenne.','silver','trophy',1,function(){return ACH.gold}),
+  B('mara','Course de fond','25 questions dans une même partie illimitée.','silver','clock',25,function(){return ACH.marathon}),
+  B('fast','Éclair','Une réponse juste en moins de 5 secondes.','bronze','bolt',1,function(){return LOG.some(function(e){return e.i&&!e.l&&e.s<=5})?1:0}),
+  B('last','À la seconde près','Une réponse juste dans les 2 dernières secondes.','silver','clock',1,function(){return LOG.some(function(e){return e.i&&!e.l&&e.s>=TL-2})?1:0}),
+  B('all','Touche-à-tout','Répondre dans les 8 thèmes.','silver','book',8,themesSeen),
+  B('spe','Spécialiste','20 questions dans un thème avec 75 % de justes.','gold','book',1,specOk),
+  B('s5','Survivant','5 questions de suite en mode survie.','bronze','shield',5,function(){return SURV.best}),
+  B('s10','Increvable','10 questions de suite en mode survie.','silver','shield',10,function(){return SURV.best}),
+  B('s20','Indestructible','20 questions de suite en mode survie.','gold','shield',20,function(){return SURV.best}),
+  B('s30','Immortel','30 questions de suite en mode survie.','epic','shield',30,function(){return SURV.best})
+];
+function checkBadges(){
+  var n=0;
+  BD.forEach(function(b){if(!BADGES[b.id]&&b.cur()>=b.max){BADGES[b.id]=Date.now();PEND.push(b.id);n++}});
+  if(n)save();
+}
+function flushBadges(){
+  var ov=$('#badgeov');if(!ov||!ov.hidden||!PEND.length)return;
+  var id=PEND.shift(),b=BD.filter(function(x){return x.id===id})[0];if(!b)return flushBadges();
+  var cols=['#FFD666','#FF7BAC','#7DE0D6','#B995FF','#FFFFFF','#FF9A5C'],pts='',i;
+  if(!reduce)for(i=0;i<34;i++){
+    var a=Math.random()*Math.PI*2,r=90+Math.random()*130;
+    pts+='<i class="pt" style="--dx:'+Math.round(Math.cos(a)*r)+'px;--dy:'+Math.round(Math.sin(a)*r-30)+'px;--r:'+Math.round(Math.random()*720-360)+'deg;--d:'+(0.9+Math.random()*0.8).toFixed(2)+'s;--w:'+(0.25+Math.random()*0.2).toFixed(2)+'s;background:'+cols[i%cols.length]+'"></i>';
+  }
+  ov.innerHTML='<div class="bx"><div class="rays"></div>'+pts+'<div class="medal">'+medal(b)+'</div>'+
+    '<p class="k">Nouveau badge</p><h2>'+esc(b.n)+'</h2><p class="dsc">'+esc(b.d)+'</p>'+
+    (PEND.length?'<p class="more">+ '+PEND.length+' autre'+(PEND.length>1?'s':'')+' à découvrir</p>':'')+
+    '<button class="btn" id="bok">'+(PEND.length?'Suivant':'Continuer')+'</button></div>';
+  ov.hidden=false;jingle();
+  $('#bok').onclick=function(){ov.hidden=true;setTimeout(flushBadges,150)};
+  $('#bok').focus();
+}
+
 function stopT(){clearInterval(tmr);tmr=null}
 function startT(onEnd){
   stopT();
@@ -469,6 +687,7 @@ function show(html,tabs){
   stopT();
   var s=$('#screen');s.innerHTML=html;s.scrollTop=0;s.classList.remove('enter');void s.offsetWidth;s.classList.add('enter');
   $('#tabs').hidden=!tabs;
+  if(tabs)musicStop();else musicStart(G&&G.surv?'surv':'play');
   $$('.tab').forEach(function(b){b.setAttribute('aria-current',b.dataset.tab===S.tab?'page':'false')});
 }
 function toast(msg){var t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(function(){t.hidden=true},1800)}
@@ -487,39 +706,54 @@ function unseenOf(th){
   if(!un.length){pool.forEach(function(q){delete SEEN[q.id]});un=pool}
   return un;
 }
+function drawNext(){
+  var q;
+  if(G.theme){q=shuffle(unseenOf(G.theme))[0]}
+  else{if(!G.ord||G.k%DN.length===0)G.ord=shuffle(DN);q=shuffle(unseenOf(G.ord[G.k%DN.length]))[0];G.k++}
+  SEEN[q.id]=1;G.set.push(q);save();
+}
+function newSurvival(){
+  G={surv:true,endless:true,run:0,set:[],ans:[],qi:0,theme:null,k:0,before:null,beforeCum:null,tot0:0};
+  drawNext();question();
+}
 function newGame(theme){
   var set=[];
-  if(theme){
-    var un=unseenOf(theme);
-    if(un.length<GL){BANK.forEach(function(q){if(q.dom===theme)delete SEEN[q.id]});un=unseenOf(theme)}
-    set=shuffle(un).slice(0,GL);
-  }else{
-    var order=shuffle(DN);for(var k=0;k<GL;k++){set.push(shuffle(unseenOf(order[k%order.length]))[0])}
+  G={set:set,ans:[],qi:0,theme:theme,k:0,endless:GL===0,before:rk(myWorld('season','all')),beforeCum:rk(myCum('season','all')),tot0:totalOf('season','all')};
+  if(GL===0){drawNext()}
+  else{
+    if(theme){
+      var un=unseenOf(theme);
+      if(un.length<GL){BANK.forEach(function(q){if(q.dom===theme)delete SEEN[q.id]});un=unseenOf(theme)}
+      set=shuffle(un).slice(0,GL);
+    }else{
+      var order=shuffle(DN);for(var k=0;k<GL;k++){set.push(shuffle(unseenOf(order[k%order.length]))[0])}
+    }
+    set.forEach(function(q){SEEN[q.id]=1});G.set=set;save();
   }
-  set.forEach(function(q){SEEN[q.id]=1});save();
-  G={set:set,ans:[],qi:0,theme:theme,before:myWorld('season','all').rank,beforeCum:myCum('season','all').rank,tot0:totalOf('season','all')};
   question();
 }
 
 /* Accueil */
 function home(){
   S.view='home';S.tab='home';
-  var w=myWorld('season','all'),played=HIST.length>0;
-  var themes=DN.map(function(d){return '<button class="theme '+dcn(d)+'" data-th="'+d+'"><b>'+d+'</b><span>'+GL+' questions</span></button>'}).join('');
+  var w=myWorld('season','all'),played=HIST.length>0,sk=streakN();
+  var themes=DN.map(function(d){return '<button class="theme '+dcn(d)+'" data-th="'+d+'"><b>'+d+'</b><span>'+(GL?GL+' questions':'illimité')+'</span></button>'}).join('');
   var sw=DN.map(function(d){return '<i class="'+dcn(d)+'"></i>'}).join('');
   var L=LEAGUES[0];
   var html='<section class="stack">'+
    '<div class="top" style="margin-bottom:2px"><div><p class="date">'+esc(frDate())+'</p><h1>Bonjour</h1></div>'+
-   '<div class="streak" aria-label="Série en cours"><b>'+(played?12:11)+'</b><span>jours de suite</span></div></div>'+
+   '<div class="streak" aria-label="Série en cours"><b>'+sk+'</b><span>jour'+(sk>1?'s':'')+' de suite</span></div></div>'+
    '<div class="hero"><p class="hl">Prêt à jouer ?</p>'+
-   '<h2 class="hh">'+NUMW[GL]+' fourchettes,<br>'+MINW[GL]+'</h2>'+
+   '<h2 class="hh">'+(GL?NUMW[GL]+' fourchettes,<br>'+MINW[GL]:'Des fourchettes<br>à l’infini')+'</h2>'+
    '<div class="swatch" aria-hidden="true">'+sw+'</div>'+
    '<button class="btn light" id="rand">Partie aléatoire</button>'+
    '<p class="note">Questions tirées au hasard, jamais deux fois les mêmes pour vous.</p></div>'+
+   '<button class="card tilecard" id="goSurv"><span class="ic g-surv"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/></svg></span>'+
+   '<span class="tx"><b>Mode survie</b><span class="small muted">Fourchette bloquée à 10 %. Une erreur et c’est fini. Record : '+SURV.best+'</span></span>'+CHEV+'</button>'+
    '<h2 class="sect">Ou choisissez un thème</h2>'+
    '<div class="themes">'+themes+'</div>'+
    '<button class="card tilecard" id="goWorld"><span class="ic g-world"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.4 3.8 5.2 3.8 8.5s-1.2 6.1-3.8 8.5c-2.6-2.4-3.8-5.2-3.8-8.5S9.4 5.9 12 3.5z"/></svg></span>'+
-   '<span class="tx"><b>Classement mondial</b><span class="small muted">'+ord(w.rank)+' sur '+nf.format(w.n)+', top '+w.pct+' %, général et par thème</span></span>'+CHEV+'</button>'+
+   '<span class="tx"><b>Classement mondial</b><span class="small muted">'+(w.ok?ord(w.rank)+' sur '+nf.format(w.n)+', top '+w.pct+' %, général et par thème':'Classé dès '+MINQ+' questions jouées, encore '+w.need)+'</span></span>'+CHEV+'</button>'+
    '<button class="card tilecard" id="goLeague"><span class="ic g-league"><svg viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><circle cx="17.5" cy="9.5" r="2.4"/><path d="M17 14.2c2.3.2 3.7 1.6 4.2 4.3"/></svg></span>'+
    '<span class="tx"><b>'+esc(L.name)+'</b><span class="small muted">Votre ligue entre amis, sans questions imposées</span></span>'+
    '<span class="avatars">'+['Camille','Inès','Malik'].map(function(x){return avatar(x)}).join('')+'</span></button>'+
@@ -530,6 +764,7 @@ function home(){
   $$('[data-th]').forEach(function(b){b.onclick=function(){newGame(b.dataset.th)}});
   $('#goWorld').onclick=function(){S.wt='all';world()};
   $('#goLeague').onclick=function(){leagues()};
+  $('#goSurv').onclick=newSurvival;
   $('#how').onclick=how;
   $('#skin').onclick=function(){S.skin=S.skin==='vif'?'warm':'vif';applySkin();save();home()};
 }
@@ -538,36 +773,47 @@ function how(){
   openSheet('<h2>Comment ça marche</h2>'+
    '<div class="step"><div class="ic" style="background:var(--a2)">1</div><p><b>Choisissez une fourchette</b>Deux curseurs encadrent votre estimation. Plus la fourchette est étroite, plus elle rapporte.</p></div>'+
    '<div class="step"><div class="ic" style="background:var(--a3)">2</div><p><b>Hors fourchette, zéro point</b>Si la bonne réponse n\u2019est pas dedans, la question ne rapporte rien. Trop large rapporte peu, trop serré fait rater : à vous de trouver l\u2019équilibre. Sûr de vous ? Tapez la valeur exacte : 150 points si c\u2019est la bonne, 0 sinon.</p></div>'+
-   '<div class="step"><div class="ic" style="background:var(--a4)">3</div><p><b>Répondez vite</b>Vous avez 20 secondes par question : assez pour réfléchir, pas assez pour chercher la réponse.</p></div>'+
+   '<div class="step"><div class="ic" style="background:var(--a4)">3</div><p><b>Répondez vite</b>Vous avez 25 secondes par question : assez pour réfléchir, pas assez pour chercher la réponse.</p></div>'+
    '<div class="step"><div class="ic" style="background:var(--a5)">4</div><p><b>Jouez comme vous voulez</b>En aléatoire ou par thème, quand vous voulez. Vos questions sont tirées au hasard, donc impossibles à connaître à l’avance.</p></div>'+
    '<div class="step"><div class="ic" style="background:var(--a6)">5</div><p><b>Montez au classement</b>Deux classements, en général et par thème : le niveau (moyenne de points par question) et le cumul (total de points, qui récompense ceux qui jouent le plus). Vos ligues comparent le niveau entre amis.</p></div>'+
+   '<div class="step"><div class="ic" style="background:var(--a1)">6</div><p><b>Survie et badges</b>En mode survie, la fourchette est fixée à 10 % de l\u2019échelle : vous la déplacez, elle ne rétrécit pas. Une erreur et la série s\u2019arrête. Paliers et exploits débloquent des badges.</p></div>'+
    '<button class="btn primary" data-close style="margin-top:12px">Compris</button>');
+}
+
+function sndBtn(){
+  return '<button class="sndb" id="snd" aria-label="Musique" aria-pressed="'+(SND.m?'true':'false')+'"><svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/>'+(SND.m?'<path d="M15.5 9a4 4 0 010 6M18 6.5a8 8 0 010 11"/>':'<path d="M16 9.5l5 5M21 9.5l-5 5"/>')+'</svg></button>';
+}
+function bindSnd(){
+  var b=$('#snd');if(!b)return;
+  b.onclick=function(){SND.m=SND.m?0:1;save();if(SND.m){musicStart(G&&G.surv?'surv':'play')}else{musicStop()}
+    b.setAttribute('aria-pressed',SND.m?'true':'false');b.outerHTML=sndBtn();bindSnd()};
 }
 
 /* Question */
 function question(){
   S.view='q';
-  var set=G.set,q=set[G.qi],i=G.qi;
+  var set=G.set,q=set[G.qi],i=G.qi;G.t0=Date.now();
   var ticks=q.ticks.map(function(t){var pp=pos(q,t);return '<span style="left:'+(pp*100)+'%'+(pp>.93?';transform:translateX(-100%)':(pp<.07?';transform:none':''))+'">'+q.f(t)+'</span>'}).join('');
   var html='<section class="'+dc(q)+'">'+
    '<div class="qtop"><button class="close" id="quit" aria-label="Quitter la partie"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'+
-   '<span class="qmeta">'+(G.theme?G.theme:'Aléatoire')+' · Question '+(i+1)+' sur '+set.length+'</span></div>'+
+   '<span class="qmeta">'+(G.surv?'Survie · série '+G.run:(G.theme?G.theme:'Aléatoire')+' · Question '+(i+1)+(G.endless?'':' sur '+set.length))+'</span>'+sndBtn()+'</div>'+
    '<div class="timer" id="timer" role="timer"><div class="tbar"><i id="tfill"></i></div><span class="tnum" id="tnum"></span></div>'+
    '<div class="qhead"><span class="qdom">'+q.dom+'</span><h2 class="qtext">'+esc(q.t)+'</h2></div>'+
-   '<div class="seg2" role="group" aria-label="Type de réponse" style="margin:14px 0 0"><button id="mR" aria-pressed="true">Fourchette</button><button id="mE" aria-pressed="false">Valeur exacte</button></div>'+
+   (G.surv?'':'<div class="seg2" role="group" aria-label="Type de réponse" style="margin:14px 0 0"><button id="mR" aria-pressed="true">Fourchette</button><button id="mE" aria-pressed="false">Valeur exacte</button></div>')+
    '<div id="exBox" hidden style="margin-top:18px"><label class="small muted" for="ex">Votre réponse'+(q.unit?' ('+q.unit+')':'')+'</label><input class="field" id="ex" inputmode="decimal" autocomplete="off" placeholder="Tapez un nombre" style="margin-top:6px;font:700 24px var(--display)"></div>'+
    '<div id="rangeBox"><div class="readout"><span class="n" id="vLo"></span><span class="dash">à</span><span class="n" id="vHi"></span><span class="u">'+(q.unit||'')+'</span></div>'+
    '<div class="rail" id="rail"><div class="bar"></div><div class="fill" id="fill"></div>'+
    '<div class="knob" id="kLo" role="slider" tabindex="0" aria-label="Borne basse"></div>'+
    '<div class="knob" id="kHi" role="slider" tabindex="0" aria-label="Borne haute"></div></div>'+
    '<div class="ticks" aria-hidden="true">'+ticks+'</div></div>'+
-   '<div class="gain"><p class="small" id="wInfo"></p><div style="text-align:right"><b id="pIn"></b><p class="small muted">points si juste</p></div></div>'+
-   '<p class="hint">'+TL+' secondes, pas le temps de chercher. Hors fourchette : 0 point. À zéro seconde, votre réponse est validée telle quelle.</p>'+
-   '<div class="qfoot"><button class="btn primary" id="ok">Valider ma fourchette</button></div>'+
+   '<div class="gain"'+(G.surv?' hidden':'')+'><p class="small" id="wInfo"></p><div style="text-align:right"><b id="pIn"></b><p class="small muted">points si juste</p></div></div>'+
+   '<p class="hint">'+(G.surv?'Fenêtre fixe de 10 % de l’échelle : déplacez-la. '+TL+' secondes. Une erreur et la partie s’arrête.':TL+' secondes, pas le temps de chercher. Hors fourchette : 0 point. À zéro seconde, votre réponse est validée telle quelle.')+'</p>'+
+   '<div class="qfoot"><button class="btn primary" id="ok">'+(G.surv?'Valider la fenêtre':'Valider ma fourchette')+'</button></div>'+
    '</section>';
   show(html,false);
   $('#quit').onclick=function(){home()};
-  var updR=mountRange(q),exact=false;
+  var updR=mountRange(q,G.surv?0.10:0),exact=false;
+  bindSnd();
   function setMode(e){
     exact=e;
     $('#mR').setAttribute('aria-pressed',String(!e));$('#mE').setAttribute('aria-pressed',String(e));
@@ -575,7 +821,7 @@ function question(){
     $('#ok').textContent=e?'Valider ma réponse':'Valider ma fourchette';
     if(e){$('#pIn').textContent=EXACT_PTS;$('#wInfo').textContent='Valeur exacte : '+EXACT_PTS+' points, sinon 0';$('#ex').focus()}else{updR()}
   }
-  $('#mR').onclick=function(){setMode(false)};$('#mE').onclick=function(){setMode(true)};
+  if(!G.surv){$('#mR').onclick=function(){setMode(false)};$('#mE').onclick=function(){setMode(true)}}
   function exVal(){var t=$('#ex').value.replace(/\s/g,'').replace(',','.'),v=parseFloat(t);return isFinite(v)&&v>0?v:null}
   function submit(late){
     var ev=exact?exVal():null;
@@ -584,15 +830,21 @@ function question(){
     var useEx=exact&&ev!==null,lo=useEx?ev:S.cur.lo,hi=useEx?ev:S.cur.hi;
     var r=score(q,lo,hi,useEx);
     G.ans[i]={lo:lo,hi:hi,pts:r.pts,inside:r.inside,tier:r.tier,late:late,exact:useEx};
-    ST[q.dom].n++;ST[q.dom].s+=r.pts;SESS[q.dom]+=r.pts;save();
+    if(G.surv){if(r.inside)G.run++;save()}
+    else{
+      var el=Math.round((Date.now()-G.t0)/100)/10;
+      ST[q.dom].n++;ST[q.dom].s+=r.pts;LOG.push({t:Date.now(),d:q.dom,i:r.inside?1:0,p:r.pts,k:r.tier,x:useEx?1:0,s:el,l:late?1:0});if(LOG.length>4000)LOG.shift();
+      checkBadges();save();
+    }
     reveal();
   }
   $('#ok').onclick=function(){submit(false)};
   startT(function(){submit(true)});
 }
-function mountRange(q){
+function mountRange(q,fixed){
   var rail=$('#rail'),fill=$('#fill'),kL=$('#kLo'),kH=$('#kHi');
-  var lo=.32,hi=.68,gap=.04;
+  var gap=fixed||.04,lo=.5-gap/2,hi=.5+gap/2,off=0,drag=false;
+  if(fixed)rail.classList.add('fixed');
   function upd(){
     var L=val(q,lo),H=val(q,hi);
     if(H<=L)H=q.int?L+1:L*1.01;
@@ -608,33 +860,41 @@ function mountRange(q){
     $('#wInfo').textContent=q.kind==='lin'?('Écart de '+(H-L)+' ans'):('Fourchette ×'+(H/L).toFixed(1).replace('.',','));
     S.cur.lo=L;S.cur.hi=H;
   }
+  function nx(x){var r=rail.getBoundingClientRect();return Math.max(0,Math.min(1,(x-r.left)/r.width))}
   function setX(x,which){
-    var r=rail.getBoundingClientRect(),n=Math.max(0,Math.min(1,(x-r.left)/r.width));
+    var n=nx(x);
     if(which==='lo')lo=Math.min(n,hi-gap);else hi=Math.max(n,lo+gap);upd();
   }
+  function setC(x){lo=Math.max(0,Math.min(1-gap,nx(x)-off-gap/2));hi=lo+gap;upd()}
   function bind(k,which){
     var on=false;
-    k.addEventListener('pointerdown',function(e){on=true;k.setPointerCapture(e.pointerId);k.focus();e.preventDefault()});
-    k.addEventListener('pointermove',function(e){if(on)setX(e.clientX,which)});
+    k.addEventListener('pointerdown',function(e){on=true;k.setPointerCapture(e.pointerId);k.focus();if(fixed)off=nx(e.clientX)-(lo+gap/2);e.preventDefault();e.stopPropagation()});
+    k.addEventListener('pointermove',function(e){if(on){if(fixed)setC(e.clientX);else setX(e.clientX,which)}});
     k.addEventListener('pointerup',function(){on=false});
     k.addEventListener('pointercancel',function(){on=false});
     k.addEventListener('keydown',function(e){
       var step=e.shiftKey?.05:.01,d=0;
       if(e.key==='ArrowLeft'||e.key==='ArrowDown')d=-step;else if(e.key==='ArrowRight'||e.key==='ArrowUp')d=step;else return;
       e.preventDefault();
-      if(which==='lo')lo=Math.max(0,Math.min(hi-gap,lo+d));else hi=Math.min(1,Math.max(lo+gap,hi+d));upd();
+      if(fixed){lo=Math.max(0,Math.min(1-gap,lo+d));hi=lo+gap;upd()}
+      else if(which==='lo')lo=Math.max(0,Math.min(hi-gap,lo+d));else hi=Math.min(1,Math.max(lo+gap,hi+d));upd();
     });
   }
   bind(kL,'lo');bind(kH,'hi');
   rail.addEventListener('pointerdown',function(e){
+    if(fixed){drag=true;off=0;rail.setPointerCapture(e.pointerId);setC(e.clientX);return}
     if(e.target!==rail&&!e.target.classList.contains('bar')&&e.target!==fill)return;
     var r=rail.getBoundingClientRect(),n=(e.clientX-r.left)/r.width;
     setX(e.clientX,Math.abs(n-lo)<Math.abs(n-hi)?'lo':'hi');
   });
+  if(fixed){
+    rail.addEventListener('pointermove',function(e){if(drag)setC(e.clientX)});
+    rail.addEventListener('pointerup',function(){drag=false});
+    rail.addEventListener('pointercancel',function(){drag=false});
+  }
   upd();
   return upd;
 }
-
 /* Révélation : votre fourchette, la foule et la vraie valeur */
 function ruler(q,a){
   var W=340,x0=66,x1=332,pw=x1-x0,rowH=30,top=44;
@@ -662,30 +922,33 @@ function ruler(q,a){
 }
 function reveal(){
   S.view='reveal';
-  var set=G.set,i=G.qi,q=set[i],a=G.ans[i],last=i===set.length-1;
-  var vt=(a.exact?{tight:'Pile sur la bonne valeur',out:'Raté, 0 point'}:{tight:'Dedans, et serré',wide:'Dedans, mais un peu large',out:'Raté, 0 point'})[a.tier];
+  var set=G.set,i=G.qi,q=set[i],a=G.ans[i],last=!G.endless&&i===set.length-1;
+  var vt=G.surv?(a.inside?'Survécu':'Éliminé'):(a.exact?{tight:'Pile sur la bonne valeur',out:'Raté, 0 point'}:{tight:'Dedans, et serré',wide:'Dedans, mais un peu large',out:'Raté, 0 point'})[a.tier];
+  if(G.surv)a.tier=a.inside?'tight':'out';
   var html='<section class="'+dc(q)+'">'+
    '<div class="dband"></div>'+
-   '<div class="qtop" style="margin-bottom:12px"><span class="qmeta">Question '+(i+1)+' sur '+set.length+'</span><span class="dchip">'+q.dom+'</span></div>'+
+   '<div class="qtop" style="margin-bottom:12px"><span class="qmeta">'+(G.surv?'Survie':'Question '+(i+1)+(G.endless?' · '+sum(G.ans)+' pts':' sur '+set.length))+'</span><span class="qright"><span class="dchip">'+q.dom+'</span>'+sndBtn()+'</span></div>'+
    '<span class="verdict '+a.tier+'">'+vt+'</span>'+
    '<p class="label" style="margin-top:14px">La vraie valeur</p>'+
    '<p class="truth">'+q.f(q.truth)+' <span class="muted" style="font-size:20px;font-weight:600;font-family:var(--body)">'+(q.unit||'')+'</span></p>'+
-   '<div class="pts"><b id="ptsN">0</b><span class="muted">points</span><span class="muted small" style="margin-left:auto">'+(a.exact?'Votre réponse : '+q.f(a.lo):'Votre fourchette : '+q.f(a.lo)+' à '+q.f(a.hi))+'</span></div>'+
+   '<div class="pts"><b id="ptsN">0</b><span class="muted">'+(G.surv?'de série':'points')+'</span><span class="muted small" style="margin-left:auto">'+(a.exact?'Votre réponse : '+q.f(a.lo):'Votre fourchette : '+q.f(a.lo)+' à '+q.f(a.hi))+'</span></div>'+
    ruler(q,a)+
    '<div class="legend"><span><i style="background:var(--plum)"></i>Vous</span><span><i style="background:var(--ink)"></i>Vraie valeur</span></div>'+
    (a.late?'<p class="late">Temps écoulé : votre fourchette a été validée telle quelle.</p>':'')+
    '<p class="fact">'+esc(q.fact)+'</p>'+
    '<p class="small muted" style="margin-top:8px">'+q.id+' · <button class="link" id="flag" style="font-size:13px"></button></p>'+
-   '<div class="qfoot"><button class="btn primary" id="next">'+(last?'Voir le bilan':'Question suivante')+'</button></div>'+
+   '<div class="qfoot"><button class="btn primary" id="next">'+(G.surv?(a.inside?'Question suivante':'Voir le résultat'):(last?'Voir le bilan':'Question suivante'))+'</button>'+(G.endless&&!G.surv?'<button class="btn ghost" id="stop" style="margin-top:8px">Terminer et voir le bilan</button>':'')+'</div>'+
    '<p class="small muted" style="margin-top:10px;text-align:center">Répartition des joueurs : donnée fictive.</p></section>';
   show(html,false);
-  var n=$('#ptsN'),t0=performance.now();
-  if(reduce){n.textContent=a.pts}else{(function tick(t){var p=Math.min(1,(t-t0)/600);n.textContent=Math.round(a.pts*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(tick)})(t0)}
+  var n=$('#ptsN'),t0=performance.now(),shown=G.surv?G.run:a.pts;
+  if(reduce){n.textContent=shown}else{(function tick(t){var p=Math.min(1,(t-t0)/600);n.textContent=Math.round(shown*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(tick)})(t0)}
+  bindSnd();setTimeout(flushBadges,650);
   function isFlag(){return FLAGS.some(function(f){return f.id===q.id})}
   function paintFlag(){$('#flag').textContent=isFlag()?'Signalée, annuler':'Signaler une erreur'}
   paintFlag();
   $('#flag').onclick=function(){if(isFlag()){FLAGS=FLAGS.filter(function(f){return f.id!==q.id})}else{FLAGS.push({id:q.id,q:q.t,truth:q.truth,fact:q.fact});toast('Question signalée')}save();paintFlag()};
-  $('#next').onclick=function(){if(last){bilan()}else{G.qi++;question()}};
+  $('#next').onclick=function(){if(G.surv){if(a.inside){drawNext();G.qi++;question()}else survEnd();return}if(last){bilan()}else{if(G.endless)drawNext();G.qi++;question()}};
+  if(G.endless&&!G.surv)$('#stop').onclick=function(){bilan()};
 }
 
 /* Bilan */
@@ -695,31 +958,55 @@ function rowsOf(set,ans){
 var KEY='<div class="key"><span><i class="tile tight"></i>Dedans, serré</span><span><i class="tile wide"></i>Dedans, large</span><span><i class="tile out"></i>Dehors</span></div>';
 function bilan(){
   S.view='bilan';S.tab='home';
-  var set=G.set,T=sum(G.ans),mx=set.length*100,th=G.theme;
-  HIST.push(T);save();
-  var wg=myWorld('season','all'),delta=G.before-wg.rank;
+  var set=G.set.slice(0,G.ans.length),T=sum(G.ans),mx=set.length*100,th=G.theme;
+  HIST.push(T);
+  if(set.length>=5&&set.every(function(q,i){return G.ans[i].inside}))ACH.perfect++;
+  if(set.length>=5&&T/set.length>=80)ACH.gold++;
+  if(G.endless&&set.length>ACH.marathon)ACH.marathon=set.length;
+  checkBadges();save();
+  var wg=myWorld('season','all'),delta=(G.before!=null&&wg.ok)?G.before-wg.rank:0;
   var wt=th?myWorld('season',th):null;
-  var cg=myCum('season','all'),cd=G.beforeCum-cg.rank,gained=totalOf('season','all')-G.tot0;
+  var cg=myCum('season','all'),cd=(G.beforeCum!=null&&cg.ok)?G.beforeCum-cg.rank:0,gained=totalOf('season','all')-G.tot0;
   var dtxt=delta===0?'':'<span class="delta">'+(delta>0?'▲ ':'▼ ')+nf.format(Math.abs(delta))+' place'+(Math.abs(delta)>1?'s':'')+'</span>';
   var html='<section class="stack '+(th?dcn(th):'')+'">'+
-   '<div class="top" style="margin-bottom:0"><div><p class="date">'+(th?esc(th):'Partie aléatoire')+'</p><h1>Bilan</h1></div><div class="streak"><b>12</b><span>jours de suite</span></div></div>'+
+   '<div class="top" style="margin-bottom:0"><div><p class="date">'+(th?esc(th):'Partie aléatoire')+'</p><h1>Bilan</h1></div><div class="streak"><b>'+streakN()+'</b><span>jour'+(streakN()>1?'s':'')+' de suite</span></div></div>'+
    '<div class="score'+(th?' themed':'')+'"><p class="label">Votre score</p><p class="big">'+T+'<small> / '+mx+'</small></p>'+
    '<p class="l2">'+Math.round(T/set.length)+' points par question</p>'+
-   '<p class="l2" style="margin-top:2px">Monde : '+ord(wg.rank)+' sur '+nf.format(wg.n)+dtxt+'</p>'+
-   '<p class="l2" style="margin-top:2px">Cumulé : '+fnum(cg.tot)+' points ('+(gained>=0?'+':'')+gained+'), '+ord(cg.rank)+(cd?'<span class="delta">'+(cd>0?'▲ ':'▼ ')+nf.format(Math.abs(cd))+'</span>':'')+'</p>'+
-   (wt?'<p class="l2" style="margin-top:2px">'+esc(th)+' : '+ord(wt.rank)+' sur '+nf.format(wt.n)+', top '+wt.pct+' %</p>':'')+'</div>'+
+   '<p class="l2" style="margin-top:2px">Monde : '+(wg.ok?ord(wg.rank)+' sur '+nf.format(wg.n)+dtxt:'classé dès '+MINQ+' questions, encore '+wg.need)+'</p>'+
+   '<p class="l2" style="margin-top:2px">Cumulé : '+fnum(cg.tot)+' points ('+(gained>=0?'+':'')+gained+'), '+(cg.ok?ord(cg.rank):'non classé')+(cd?'<span class="delta">'+(cd>0?'▲ ':'▼ ')+nf.format(Math.abs(cd))+'</span>':'')+'</p>'+
+   (wt?'<p class="l2" style="margin-top:2px">'+esc(th)+' : '+(wt.ok?ord(wt.rank)+' sur '+nf.format(wt.n)+', top '+wt.pct+' %':'classé dès '+MINQ+' questions, encore '+wt.need)+'</p>':'')+'</div>'+
    '<div class="card"><ul class="list">'+rowsOf(set,G.ans)+'</ul>'+KEY+'</div>'+
    '<button class="btn accent" id="again">'+(th?'Rejouer en '+esc(th):'Nouvelle partie aléatoire')+'</button>'+
    '<button class="btn ghost" id="toWorld">Voir le classement mondial</button>'+
    '<button class="btn ghost" id="share">Copier mon résumé</button>'+
    '<p class="small muted" style="text-align:center">Maquette : banque de '+BANK.length+' questions. En vrai, des milliers, et jamais deux fois la même pour vous.</p></section>';
-  show(html,true);
+  show(html,true);setTimeout(flushBadges,500);
   $('#again').onclick=function(){newGame(th)};
   $('#toWorld').onclick=function(){S.wt=th||'all';world()};
   $('#share').onclick=function(){
     var sq=G.ans.map(function(a){return a.tier==='tight'?'🟩':(a.tier==='wide'?'🟨':'🟥')}).join('');
     copy('La Fourchette · '+(th||'Aléatoire')+'\n'+sq+'\n'+T+' / '+mx,'Résumé copié');
   };
+}
+
+/* Bilan survie */
+function survEnd(){
+  S.view='surv';S.tab='home';
+  var run=G.run,rec=run>SURV.best;
+  SURV.runs++;if(rec)SURV.best=run;
+  checkBadges();save();
+  var rows=G.set.slice(0,G.ans.length).map(function(q,i){var a=G.ans[i];return '<li class="'+dc(q)+'"><span class="tile '+(a.inside?'tight':'out')+'" aria-hidden="true"></span><div class="grow"><p class="t">'+esc(q.t)+'</p><p class="small"><span class="dchip">'+q.dom+'</span> <span class="muted">'+q.f(q.truth)+(q.unit?' '+esc(q.unit):'')+'</span></p></div><b>'+(a.inside?'✓':'✗')+'</b></li>'}).join('');
+  var html='<section class="stack">'+
+   '<div class="top" style="margin-bottom:0"><div><p class="date">Mode survie</p><h1>Fin de partie</h1></div></div>'+
+   '<div class="score"><p class="label">Série</p><p class="big">'+run+'<small> question'+(run>1?'s':'')+'</small></p>'+
+   '<p class="l2">'+(rec&&run>0?'Nouveau record !':'Record : '+SURV.best)+'</p>'+
+   '<p class="l2" style="margin-top:2px">'+SURV.runs+' partie'+(SURV.runs>1?'s':'')+' de survie jouée'+(SURV.runs>1?'s':'')+'</p></div>'+
+   '<div class="card"><ul class="list">'+rows+'</ul></div>'+
+   '<button class="btn accent" id="again">Rejouer en survie</button>'+
+   '<button class="btn ghost" id="toHome">Retour à l’accueil</button>'+
+   '<p class="small muted" style="text-align:center">La survie ne compte pas dans les classements Niveau et Cumulé.</p></section>';
+  show(html,true);setTimeout(flushBadges,500);
+  $('#again').onclick=newSurvival;$('#toHome').onclick=home;
 }
 
 /* Classement mondial : général et par thème */
@@ -738,10 +1025,12 @@ function world(){
   var list=names.slice(3).map(function(nm,j){var k=j+3;return '<li><span class="rank">'+(k+1)+'</span>'+avatar(nm[0])+'<div class="nm"><b>'+esc(nm[0])+'</b><span>'+nm[1]+(cum?' · '+fnum(tops[k]/62)+' questions':'')+'</span></div><span class="sc">'+fmt(tops[k])+'</span></li>'}).join('');
   var thPills='<button class="pill thm" data-wt="all" aria-pressed="'+all+'">Général</button>'+DN.map(function(d){return '<button class="pill thm '+dcn(d)+'" data-wt="'+d+'" aria-pressed="'+(th===d)+'">'+d+'</button>'}).join('');
   var mine='<div class="mecard '+(all?'':'themed '+dcn(th))+'"><p class="label">Votre rang '+(cum?'cumulé':'niveau')+' · '+(all?'général':esc(th))+(fr?' · France':' · monde')+'</p>'+
+     (me.ok?
      '<p class="rk">'+ord(me.rank)+' <small>sur '+nf.format(me.n)+'</small></p>'+
      '<p style="margin-top:4px;font-weight:600">'+(cum?fnum(me.tot)+' points cumulés · top '+me.pct+' %':f1(me.avg)+' points par question · top '+me.pct+' %')+'</p>'+
      '<div class="dist" role="img" aria-label="Meilleur que '+me.better+' % des joueurs"><i style="left:'+me.better+'%"></i></div>'+
-     '<div class="dist-l"><span>Derniers</span><span>Meilleur que '+me.better+' %</span><span>Premiers</span></div></div>';
+     '<div class="dist-l"><span>Derniers</span><span>Meilleur que '+me.better+' %</span><span>Premiers</span></div>':
+     '<p class="rk" style="font-size:26px">Pas encore classé</p><p style="margin-top:4px;font-weight:600">'+(cum?'Jouez une première question.':'Encore '+me.need+' question'+(me.need>1?'s':'')+' dans '+(all?'ce classement':esc(th))+' pour être classé.')+'</p>')+'</div>';
   var html='<section>'+
    '<div class="top" style="margin-bottom:6px"><div><p class="date">Classement</p><h1>Mondial</h1></div></div>'+
    '<div class="seg2" role="group" aria-label="Type de classement" style="margin:8px 0 12px"><button data-wm="avg" aria-pressed="'+(!cum)+'">Niveau</button><button data-wm="cum" aria-pressed="'+cum+'">Cumulé</button></div>'+
@@ -762,16 +1051,16 @@ function world(){
 function leagues(){
   S.view='leagues';S.tab='leagues';
   var L=LEAGUES[S.league],key=S.range==='week'?'week':'season';
-  var myA=avgOf('all'),myQ=qCount();
+  var myQ=qCount(),wl=logOf('all',Date.now()-7*864e5),myAs=avgOf('all'),myAw=wl.length?wl.reduce(function(x,e){return x+e.p},0)/wl.length:0;
   var members=L.m.map(function(m){
-    if(m[0]==='Vous')return {n:'Vous',week:myA,season:myA,wq:Math.max(0,myQ-80)+12,sq:myQ+60};
+    if(m[0]==='Vous')return {n:'Vous',week:myAw,season:myAs,wq:wl.length,sq:myQ};
     return {n:m[0],week:m[1],season:m[2],wq:m[3],sq:m[4]};
   });
   members.sort(function(a,b){return b[key]-a[key]});
   var board=members.map(function(m,i){
     var k=key==='week'?m.wq:m.sq;
     return '<li class="'+(m.n==='Vous'?'me':'')+'"><span class="rank '+(i<3?'r'+(i+1):'')+'">'+(i+1)+'</span>'+avatar(m.n,'lg')+
-    '<div class="nm"><b>'+esc(m.n)+'</b><span>'+k+' questions jouées</span></div><span class="sc">'+f1(m[key])+'</span></li>';
+    '<div class="nm"><b>'+esc(m.n)+'</b><span>'+k+' questions jouées</span></div><span class="sc">'+(k?f1(m[key]):'—')+'</span></li>';
   }).join('');
   var pills=LEAGUES.map(function(l,i){return '<button class="pill" data-l="'+i+'" aria-pressed="'+(i===S.league)+'">'+esc(l.name)+'</button>'}).join('')+'<button class="pill" id="newL">+ Créer</button>';
   var html='<section>'+
@@ -798,19 +1087,25 @@ function newLeague(){
 }
 
 /* Profil */
+var DAYS=[];
+function daysData(){
+  var m={},ks=[];
+  LOG.forEach(function(e){if(e.x)return;var k=dkey(e.t);if(!m[k]){m[k]={k:k,n:0,h:0,t:e.t};ks.push(k)}m[k].n++;m[k].h+=e.i});
+  return ks.slice(-10).map(function(k){var o=m[k];return {k:k,n:o.n,pct:Math.round(o.h/o.n*100),lab:new Date(o.t).toLocaleDateString('fr-FR',{day:'numeric',month:'numeric'})}});
+}
 function chart(){
-  var W=320,H=190,l=34,r=14,t=16,b=30,pw=W-l-r,ph=H-t-b,v=PROFILE.weeks,n=v.length;
+  var W=320,H=190,l=34,r=14,t=16,b=30,pw=W-l-r,ph=H-t-b,v=DAYS.map(function(d){return d.pct}),n=v.length;
   function X(i){return l+i*pw/(n-1)}
-  function Y(p){return t+(1-(p-40)/60)*ph}
-  var s='<svg id="ch" viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Part de fourchettes justes sur 8 semaines, de 48 % à 61 %, repère à 80 %" style="display:block;overflow:visible">';
-  [40,60,80,100].forEach(function(g){s+='<line x1="'+l+'" x2="'+(W-r)+'" y1="'+Y(g)+'" y2="'+Y(g)+'" stroke="var(--line)" stroke-width="1"/><text x="'+(l-8)+'" y="'+(Y(g)+4)+'" text-anchor="end" style="font:11px var(--body);fill:var(--ink2)">'+g+'</text>'});
+  function Y(p){return t+(1-p/100)*ph}
+  var s='<svg id="ch" viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Part de fourchettes justes jour par jour, dernière valeur '+v[n-1]+' %, repère à 80 %" style="display:block;overflow:visible">';
+  [0,40,60,80,100].forEach(function(g){s+='<line x1="'+l+'" x2="'+(W-r)+'" y1="'+Y(g)+'" y2="'+Y(g)+'" stroke="var(--line)" stroke-width="1"/><text x="'+(l-8)+'" y="'+(Y(g)+4)+'" text-anchor="end" style="font:11px var(--body);fill:var(--ink2)">'+g+'</text>'});
   s+='<line x1="'+l+'" x2="'+(W-r)+'" y1="'+Y(80)+'" y2="'+Y(80)+'" stroke="var(--ink2)" stroke-width="1.5" stroke-dasharray="5 4"/>';
   s+='<text x="'+(W-r)+'" y="'+(Y(80)-6)+'" text-anchor="end" style="font:600 11px var(--body);fill:var(--ink2)">Repère 80 %</text>';
   var d=v.map(function(p,i){return (i?'L':'M')+X(i).toFixed(1)+' '+Y(p).toFixed(1)}).join(' ');
   s+='<path d="'+d+'" fill="none" stroke="var(--plum)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
   s+='<circle cx="'+X(n-1)+'" cy="'+Y(v[n-1])+'" r="5" fill="var(--plum)" stroke="var(--card)" stroke-width="2.5"/>';
   s+='<text x="'+(X(n-1)-8)+'" y="'+(Y(v[n-1])+20)+'" text-anchor="end" style="font:700 12px var(--body);fill:var(--ink)">'+v[n-1]+' %</text>';
-  for(var i=0;i<n;i+=1){if(i%2===0||i===n-1)s+='<text x="'+X(i)+'" y="'+(H-8)+'" text-anchor="middle" style="font:11px var(--body);fill:var(--ink2)">S'+(i+1)+'</text>'}
+  for(var i=0;i<n;i+=1){if(n<=5||i%2===0||i===n-1)s+='<text x="'+X(i)+'" y="'+(H-8)+'" text-anchor="middle" style="font:11px var(--body);fill:var(--ink2)">'+DAYS[i].lab+'</text>'}
   return s+'</svg>';
 }
 function badge(n,l,c1,c2){
@@ -818,43 +1113,57 @@ function badge(n,l,c1,c2){
 }
 function profile(){
   S.view='profile';S.tab='profile';
-  var cur=PROFILE.weeks[PROFILE.weeks.length-1];
-  var mpos=(cur-40)/60*100,tpos=(80-40)/60*100;
-  var dom=PROFILE.dom.map(function(d){return '<li class="'+dcn(d[0])+'"><span>'+d[0]+'</span><div class="b"><i style="width:'+d[1]+'%"></i><u style="left:80%"></u></div><b>'+d[1]+' %</b></li>'}).join('');
-  var lvl=DN.map(function(d){var a=avgOf(d);return '<li class="'+dcn(d)+'"><span>'+d+'</span><div class="b"><i style="width:'+Math.round(a)+'%"></i></div><b>'+Math.round(a)+'</b></li>'}).join('');
-  var rows=PROFILE.weeks.map(function(p,i){return '<tr><td>Semaine '+(i+1)+'</td><td>'+p+' %</td></tr>'}).join('');
+  DAYS=daysData();
+  var rl=LOG.filter(function(e){return !e.x}).slice(-50),cur=rl.length?Math.round(rl.reduce(function(x,e){return x+e.i},0)/rl.length*100):null;
+  var okC=rl.length>=MINQ;
+  var conf=!okC?'Pas encore assez de données':(cur<65?'Plutôt sûr de vous':(cur<=90?'Plutôt bien calibré':'Plutôt prudent'));
+  var mpos=okC?cur:0,tpos=80;
+  var dom=DN.map(function(d){var l=logOf(d).filter(function(e){return !e.x}),p=l.length?Math.round(l.reduce(function(x,e){return x+e.i},0)/l.length*100):null;return '<li class="'+dcn(d)+'"><span>'+d+'</span><div class="b"><i style="width:'+(p||0)+'%"></i><u style="left:80%"></u></div><b>'+(p===null?'—':p+' %')+'</b></li>'}).join('');
+  var lvl=DN.map(function(d){var a=avgOf(d),has=ST[d].n>0;return '<li class="'+dcn(d)+'"><span>'+d+'</span><div class="b"><i style="width:'+Math.round(a)+'%"></i></div><b>'+(has?Math.round(a):'—')+'</b></li>'}).join('');
+  var rows=DAYS.map(function(d){return '<tr><td>'+d.lab+' ('+d.n+' q.)</td><td>'+d.pct+' %</td></tr>'}).join('');
+  var perf=LOG.filter(function(e){return e.k==='tight'}).length,sk=streakN();
   var best=HIST.length?Math.max.apply(null,HIST):0;
   var html='<section class="stack">'+
-   '<div class="top" style="margin-bottom:0"><div><p class="date">Sur vos 50 dernières questions</p><h1>Votre profil</h1></div></div>'+
-   '<div class="card"><p class="label">Votre confiance</p><p style="font-weight:700;font-size:18px;margin-top:2px">Plutôt sûr de vous</p>'+
-   '<p class="small muted" style="margin-top:4px">Vos fourchettes contiennent la bonne réponse '+cur+' fois sur 100. Hors fourchette, la question ne rapporte rien : cherchez votre équilibre.</p>'+
+   '<div class="top" style="margin-bottom:0"><div><p class="date">'+(qCount()?(function(n){return n>1?'Sur vos '+n+' dernières fourchettes':'Sur votre dernière fourchette'})(Math.min(50,LOG.filter(function(e){return !e.x}).length)):'Rien de joué pour l’instant')+'</p><h1>Votre profil</h1></div></div>'+
+   '<div class="card"><p class="label">Votre confiance</p><p style="font-weight:700;font-size:18px;margin-top:2px">'+conf+'</p>'+
+   (okC?'<p class="small muted" style="margin-top:4px">Vos fourchettes contiennent la bonne réponse '+cur+' fois sur 100. Hors fourchette, la question ne rapporte rien : cherchez votre équilibre.</p>'+
    '<div class="meter" role="img" aria-label="Vous : '+cur+' %, repère : 80 %"><span class="mk" style="left:'+mpos+'%"></span><span class="l" style="left:'+mpos+'%">Vous '+cur+' %</span><span class="tg" style="left:'+tpos+'%"></span></div>'+
-   '<div class="scale"><span>Trop sûr de soi</span><span>Trop prudent</span></div></div>'+
-   '<div class="card"><p class="label">Fourchettes justes, semaine par semaine</p><div class="chartwrap" style="margin-top:10px">'+chart()+'<div class="tip" id="tip" hidden></div></div>'+
-   '<details><summary>Voir les valeurs</summary><table><thead><tr><th>Période</th><th>Fourchettes justes</th></tr></thead><tbody>'+rows+'</tbody></table></details></div>'+
+   '<div class="scale"><span>Trop sûr de soi</span><span>Trop prudent</span></div>':
+   '<p class="small muted" style="margin-top:4px">Jouez au moins '+MINQ+' fourchettes pour voir si vous êtes trop sûr de vous ou trop prudent. Encore '+Math.max(0,MINQ-rl.length)+'.</p>')+'</div>'+
+   '<div class="card"><p class="label">Fourchettes justes, jour par jour</p>'+(DAYS.length>=2?'<div class="chartwrap" style="margin-top:10px">'+chart()+'<div class="tip" id="tip" hidden></div></div>'+
+   '<details><summary>Voir les valeurs</summary><table><thead><tr><th>Jour</th><th>Fourchettes justes</th></tr></thead><tbody>'+rows+'</tbody></table></details>':'<p class="small muted" style="margin-top:6px">Le graphique apparaît dès que vous avez joué sur deux jours différents.</p>')+'</div>'+
    '<div class="card"><p class="label">Fourchettes justes par thème</p><ul class="dom" style="margin-top:6px">'+dom+'</ul><p class="small muted">Trait pointillé : le repère de 80 %.</p></div>'+
    '<div class="card"><p class="label">Points par question, par thème</p><ul class="dom" style="margin-top:6px">'+lvl+'</ul><p class="small muted">C’est cette moyenne qui fait votre rang au classement.</p></div>'+
-   '<div class="card"><p class="label" style="margin-bottom:10px">Vos parties</p><div class="kv"><div><b>'+HIST.length+'</b><span class="small muted">partie'+(HIST.length>1?'s':'')+' cette session</span></div><div><b>'+(HIST.length?best:'—')+'</b><span class="small muted">record sur '+(GL*100)+'</span></div></div></div>'+
-   '<div class="card"><p class="label" style="margin-bottom:10px">Repères gagnés</p><div class="badges">'+
-   badge('12','jours de suite','#E8A62F','#C9532A')+badge('3','fourchettes parfaites','#1F8A8A','#4A5FC1')+badge('2','saisons terminées','#C23F69','#6B3470')+'</div></div>'+
+   '<div class="card"><p class="label" style="margin-bottom:10px">Vos parties</p><div class="kv"><div><b>'+HIST.length+'</b><span class="small muted">partie'+(HIST.length>1?'s':'')+' terminée'+(HIST.length>1?'s':'')+'</span></div><div><b>'+(HIST.length?best:'—')+'</b><span class="small muted">meilleur score</span></div></div></div>'+
+   '<div class="card"><p class="label" style="margin-bottom:12px">Badges · '+Object.keys(BADGES).length+' / '+BD.length+'</p><div class="bgrid">'+BD.map(function(b){var got=!!BADGES[b.id];return '<button data-bd="'+b.id+'" class="'+(got?'':'lock')+'" aria-label="'+esc(b.n)+(got?'':' (à débloquer)')+'">'+medal(b)+'<span>'+esc(b.n)+'</span></button>'}).join('')+'</div></div>'+
+   '<div class="card"><p class="label" style="margin-bottom:10px">Survie</p><div class="kv"><div><b>'+SURV.best+'</b><span class="small muted">record de série</span></div><div><b>'+SURV.runs+'</b><span class="small muted">partie'+(SURV.runs>1?'s':'')+' jouée'+(SURV.runs>1?'s':'')+'</span></div></div></div>'+
+   '<div class="card"><p class="label" style="margin-bottom:10px">Son</p><div class="seg2" role="group" aria-label="Musique de fond" style="margin:0 0 8px"><button data-snd="m1" aria-pressed="'+(!!SND.m)+'">Musique : oui</button><button data-snd="m0" aria-pressed="'+(!SND.m)+'">Musique : non</button></div><div class="seg2" role="group" aria-label="Son des badges" style="margin:0"><button data-snd="f1" aria-pressed="'+(!!SND.f)+'">Badges : oui</button><button data-snd="f0" aria-pressed="'+(!SND.f)+'">Badges : non</button></div></div>'+
    '<div class="card"><p class="label" style="margin-bottom:10px">Ambiance</p><div class="seg2" role="group" aria-label="Ambiance" style="margin:0"><button data-skin="vif" aria-pressed="'+(S.skin==='vif')+'">Vif</button><button data-skin="warm" aria-pressed="'+(S.skin!=='vif')+'">Chaleureuse</button></div></div>'+
    '<div class="card"><p class="label" style="margin-bottom:10px">Version test</p>'+
    '<p class="small muted">'+nf.format(BANK.length)+' questions dans la banque, '+nf.format(Object.keys(SEEN).length)+' déjà posées, '+FLAGS.length+' signalée'+(FLAGS.length>1?'s':'')+'. Banque écrite de mémoire, à vérifier : signalez toute valeur douteuse.</p>'+
-   '<p class="label" style="margin:14px 0 6px">Questions par partie</p><div class="seg2" role="group" aria-label="Questions par partie" style="margin:0">'+[3,5,10].map(function(n){return '<button data-gl="'+n+'" aria-pressed="'+(GL===n)+'">'+n+'</button>'}).join('')+'</div>'+
+   '<p class="label" style="margin:14px 0 6px">Questions par partie</p><div class="seg2" role="group" aria-label="Questions par partie" style="margin:0">'+[3,5,10,0].map(function(n){return '<button data-gl="'+n+'" aria-pressed="'+(GL===n)+'">'+(n||'Illimité')+'</button>'}).join('')+'</div>'+
    '<button class="btn ghost" id="expFlags" style="margin-top:12px">Copier les signalements</button></div>'+
    '<div class="demo"><span>Classements et ligues simulés : données fictives</span><button class="link" id="reset">Tout remettre à zéro</button></div></section>';
   show(html,true);
   $$('button[data-skin]').forEach(function(b){b.onclick=function(){S.skin=b.dataset.skin;applySkin();save();profile()}});
+  $$('[data-snd]').forEach(function(b){b.onclick=function(){var k=b.dataset.snd;if(k[0]==='m')SND.m=+k[1];else SND.f=+k[1];save();if(k==='f1')jingle();profile()}});
+  $$('[data-bd]').forEach(function(b){b.onclick=function(){
+    var bb=BD.filter(function(x){return x.id===b.dataset.bd})[0],got=BADGES[bb.id],cur=Math.min(bb.max,bb.cur());
+    openSheet('<div style="text-align:center"><div style="width:110px;margin:0 auto 8px">'+medal(bb)+'</div><h2>'+esc(bb.n)+'</h2><p class="small muted" style="margin-top:4px">'+esc(bb.d)+'</p>'+
+      (got?'<p style="margin-top:12px;font-weight:600">Obtenu le '+new Date(got).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})+'</p>':
+      (bb.max>1?'<div class="bprog"><i style="width:'+Math.round(cur/bb.max*100)+'%"></i></div><p class="small muted">'+nf.format(Math.floor(cur))+' / '+nf.format(bb.max)+'</p>':'<p style="margin-top:12px;font-weight:600">Pas encore débloqué</p>'))+
+      '</div><button class="btn primary" data-close style="margin-top:16px">Fermer</button>');
+  }});
   $$('[data-gl]').forEach(function(b){b.onclick=function(){GL=+b.dataset.gl;save();profile()}});
   $('#expFlags').onclick=function(){if(!FLAGS.length){toast('Aucun signalement');return}copy(JSON.stringify(FLAGS,null,1),FLAGS.length+' signalement'+(FLAGS.length>1?'s':'')+' copié'+(FLAGS.length>1?'s':''))};
   $('#reset').onclick=function(){resetStats();FLAGS=[];save();G={set:[],ans:[],qi:0,theme:null,before:0};S.wt='all';toast('Progression remise à zéro');home()};
   var svg=$('#ch'),tip=$('#tip');
   if(svg){
     svg.addEventListener('pointermove',function(e){
-      var r=svg.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*320,n=PROFILE.weeks.length;
+      var r=svg.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*320,n=DAYS.length;
       var i=Math.max(0,Math.min(n-1,Math.round((x-34)/((320-34-14)/(n-1)))));
-      var px=(34+i*(320-34-14)/(n-1))/320*r.width,py=(16+(1-(PROFILE.weeks[i]-40)/60)*(190-16-30))/190*r.height;
-      tip.hidden=false;tip.style.left=px+'px';tip.style.top=py+'px';tip.textContent='Semaine '+(i+1)+' : '+PROFILE.weeks[i]+' %';
+      var px=(34+i*(320-34-14)/(n-1))/320*r.width,py=(16+(1-DAYS[i].pct/100)*(190-16-30))/190*r.height;
+      tip.hidden=false;tip.style.left=px+'px';tip.style.top=py+'px';tip.textContent=DAYS[i].lab+' : '+DAYS[i].pct+' % ('+DAYS[i].n+' question'+(DAYS[i].n>1?'s':'')+')';
     });
     svg.addEventListener('pointerleave',function(){tip.hidden=true});
   }
@@ -869,9 +1178,10 @@ $('#sheetbg').addEventListener('click',function(e){if(e.target.id==='sheetbg'||e
 $('#sheet').addEventListener('click',function(e){if(e.target.hasAttribute('data-close'))closeSheet()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet()});
 applySkin();
-function backNav(){if(!$('#sheetbg').hidden){closeSheet();return true}if(S.view!=='home'){home();return true}return false}
+function backNav(){var ov=$('#badgeov');if(ov&&!ov.hidden){ov.hidden=true;setTimeout(flushBadges,150);return true}if(!$('#sheetbg').hidden){closeSheet();return true}if(S.view!=='home'){home();return true}return false}
 var CAP=window.Capacitor;
-if(CAP&&CAP.Plugins&&CAP.Plugins.App){CAP.Plugins.App.addListener('backButton',function(){if(!backNav())CAP.Plugins.App.exitApp()})}
+if(CAP&&CAP.Plugins&&CAP.Plugins.App){if(CAP.Plugins.App.addListener){CAP.Plugins.App.addListener('appStateChange',function(st){if(st&&st.isActive)auResume();else auSuspend()})}
+CAP.Plugins.App.addListener('backButton',function(){if(!backNav())CAP.Plugins.App.exitApp()})}
 home();
 })();
 </script>

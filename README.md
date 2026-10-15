@@ -1,6 +1,6 @@
 # La Fourchette — version de test Android
 
-Application d'estimation par fourchettes : on encadre une valeur, plus c'est serré, plus ça rapporte, et hors fourchette c'est 0 point. Cette version contient **1 017 questions** réparties en 8 thèmes, des parties aléatoires ou par thème, un chrono de 20 s, la réponse exacte (150 points), un classement « niveau » et « cumulé », et deux ambiances (Vif / Chaleureuse).
+Application d'estimation par fourchettes : on encadre une valeur, plus c'est serré, plus ça rapporte, et hors fourchette c'est 0 point. Cette version contient **1 017 questions** réparties en 8 thèmes, des parties aléatoires ou par thème, un chrono de 25 s, la réponse exacte (150 points), un classement « niveau » et « cumulé », et deux ambiances (Vif / Chaleureuse).
 
 > **L'APK n'est pas inclus.** Il n'a pas pu être compilé dans l'environnement où ce projet a été écrit (pas d'accès au SDK Android). Le projet ci-dessous est prêt à être compilé par l'une des trois voies. La compilation n'a donc **pas été testée de bout en bout** ; la page web, elle, a été testée dans un navigateur (parties simulées, sauvegarde, réponse exacte).
 
@@ -51,7 +51,7 @@ Répartition : Sport 127, Géographie 124, Nature 100, Transports 106, Territoir
 
 ## Réglages utiles
 
-- Durée du chrono : `TL` dans `app.template.html` (20 s).
+- Durée du chrono : `TL` dans `app.template.html` (25 s).
 - Questions par partie : 3, 5 ou 10, dans Profil → Version test.
 - Points : `ptsFromS` (décroissance de la récompense selon la largeur) et `EXACT_PTS` (150).
 - Identifiant de l'appli : `capacitor.config.json` (`app.fourchette.test`).
@@ -64,3 +64,13 @@ Répartition : Sport 127, Géographie 124, Nature 100, Transports 106, Territoir
 - `www/` : ce que Capacitor embarque dans l'APK.
 - `assets/` : icône et écran de démarrage.
 - `.github/workflows/build-apk.yml`, `build-apk.sh` : compilation.
+
+## Profil vierge
+
+Au premier lancement, tout est à zéro : aucune statistique, série ou badge fictif. Le profil, la série de jours, les graphiques et les moyennes viennent uniquement de vos réponses (stockées sur l'appareil). Le rang « Niveau » apparaît après 10 questions. Seuls les autres joueurs du classement et des ligues restent simulés.
+
+## Badges, son, survie
+
+- **32 badges** (paliers de questions, de parties, de jours de suite et de points, exploits : valeur exacte, séries sans faute, partie parfaite, réponse éclair, survie…). Animation de déblocage (médaille, rayons, confettis). Définitions : tableau `BD` dans `app.template.html`.
+- **Musique** : synthétisée en direct (Web Audio), aucun fichier audio. Une ambiance pour jouer, une plus rythmée en survie, un jingle distinct pour les badges. Réglages dans Profil > Son, haut-parleur sur l'écran de question. Coupée quand l'application passe en arrière-plan. Presets : objet `PRE`.
+- **Mode survie** : fenêtre fixée à 10 % de l'échelle, que l'on déplace. Une erreur et la partie s'arrête. Compte pour les badges de survie, pas pour les classements Niveau et Cumulé.
