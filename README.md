@@ -1,119 +1,75 @@
 # La Fourchette — version de test Android
 
-Application d'estimation par fourchettes : on encadre une valeur, plus c'est serré, plus ça rapporte, et hors fourchette c'est 0 point. Cette version contient **1 017 questions** réparties en 8 thèmes, des parties aléatoires ou par thème, un chrono de 25 s, la réponse exacte (150 points), un classement « niveau » et « cumulé », et deux ambiances (Vif / Chaleureuse).
+Jeu d'estimation : une fourchette fixe de 20 % de l'échelle part du milieu, on la fait glisser autour de son estimation. Bonne réponse au centre : 100 points, au bord : 50, dehors : 0. Valeur exacte : 150. 1 014 questions en 8 thèmes, chrono de 25 s, tout est vérifié par un serveur Supabase.
 
-> **L'APK n'est pas inclus.** Il n'a pas pu être compilé dans l'environnement où ce projet a été écrit (pas d'accès au SDK Android). Le projet ci-dessous est prêt à être compilé par l'une des trois voies. La compilation n'a donc **pas été testée de bout en bout** ; la page web, elle, a été testée dans un navigateur (parties simulées, sauvegarde, réponse exacte).
+## Ce que contient l'appli
 
-## Voie 1 — GitHub Actions (la plus simple, rien à installer)
+- **Parties** : aléatoires ou par thème, 3 / 5 / 10 questions ou illimité. Combo de centrage (réponses centrées à 80 % ou plus : ×1, ×1,2, ×1,5, ×2).
+- **Défi du jour** : les mêmes 5 questions pour tous, une tentative, rang en direct, classement du jour, partage en grille d'emojis, série avec jokers (gel de série).
+- **Mode Expert** : fourchette de 10 %, points doublés, débloqué à 80 questions classées.
+- **Survie** : fourchette de 10 %, puis 8 % et 6 %, une vie bonus tous les 10 ; hors classement.
+- **Duel** : 5 questions identiques par code envoyé en message ; hors classement.
+- **Classements réels** : mondial (Niveau = moyenne par question, min. 10 ; Cumulé), sur 7 jours ou la saison (mois en cours, badge de fin de saison), général ou par thème, Monde ou France, avec rival.
+- **Divisions hebdomadaires** : groupes de 30 (Bronze, Argent, Or, Diamant), top 5 promus, 5 derniers relégués.
+- **Ligues entre amis** : création, code d'invitation, classement.
+- **Progression** : niveaux et XP, 40 badges, coffre du jour, missions de la semaine, collection de cartes, couleurs à débloquer.
+- **Accueil** : tient sur un écran (défi du jour, 4 modes, coffre / missions / division, 8 thèmes), thème clair par défaut ; « Sombre » et « Chaleureuse » dans Profil > Ambiance.
+- **Compte** : anonyme au départ ; « Sécuriser mon compte » lie une adresse e-mail (code à 6 chiffres) pour le retrouver sur un autre téléphone.
+- **Confort** : musique et effets synthétisés, vibrations, rappel quotidien (notification), signalement des questions douteuses.
 
-1. Créez un dépôt GitHub (privé convient) et envoyez-y tout le contenu de ce dossier.
-2. Onglet **Actions** → « Build APK de test » → **Run workflow** (il se lance aussi à chaque envoi sur `main`).
-3. Au bout de quelques minutes, téléchargez l'artefact **la-fourchette-test-apk** : il contient `app-debug.apk`.
+## Mise en place du serveur (Supabase)
 
-## Voie 2 — En local
+1. **Authentication > Sign In / Providers** : activer **Allow anonymous sign-ins** (comptes sans e-mail).
+2. **SQL Editor**, dans l'ordre, chaque fichier collé puis **Run** :
+   `server/01_schema.sql`, `server/02_questions_1.sql`, `_2`, `_3`, `server/03_fenetre_20.sql`, `server/04_addictif.sql`, `server/05_progression.sql`.
+   Tous peuvent être relancés sans perte de données.
+3. **E-mail (récupération de compte)** :
+   - **Authentication > Emails > Templates** : dans « Magic Link » et « Change Email Address », ajouter le code `{{ .Token }}` au message (l'appli demande un code à 6 chiffres, pas un lien).
+   - **Authentication > Emails > SMTP Settings** : brancher un SMTP (Brevo, Resend, etc.). L'expéditeur par défaut de Supabase n'écrit qu'aux membres de l'équipe du projet, avec un très petit quota.
+4. `sbconfig.json` contient l'URL du projet et la clé **publique** (faite pour être dans l'appli). Ne jamais y mettre la clé `secret` / `service_role`.
 
-Prérequis : Node 20+, Java 21, Android SDK (variable `ANDROID_HOME`), Python 3.
+Anti-triche : l'APK n'embarque aucune réponse. Le serveur envoie la question sans la réponse, chronomètre (25 s + 4 s de marge), vérifie la largeur de la fourchette, calcule les points et le combo, puis révèle la valeur.
 
-```bash
-./build-apk.sh
-# APK : android/app/build/outputs/apk/debug/app-debug.apk
+## Compiler l'APK
+
+- **GitHub Actions** (recommandé) : envoyer ce dossier sur GitHub ; l'action « Build APK de test » se lance à chaque envoi sur `main` et produit l'artefact `la-fourchette-test-apk` (`app-debug.apk`).
+- **En local** : `./build-apk.sh` (Node 20+, Java 21, Android SDK).
+- **Signature** : `signing/test-debug.keystore` (clé de test publique, mot de passe `android`) signe toujours de la même façon, et le numéro de version augmente à chaque compilation GitHub : les mises à jour s'installent par-dessus sans perdre la progression. Pour le Play Store, il faudra une vraie clé, gardée secrète.
+
+## Modifier les questions
+
+Éditer `qs/*.py`, puis :
+
+```
+python3 build_questions.py && python3 build_server_questions.py && python3 build_app.py
 ```
 
-## Voie 3 — Android Studio
+et recoller `server/02_questions_*.sql` dans le SQL Editor (mise à jour des questions existantes). Retirer une question : `update questions set active = false where id = 'SP001';`.
 
-```bash
-python3 build_questions.py && python3 build_app.py
-npm install
-npx cap add android
-npx cap sync android
-npx cap open android      # puis Build > Build APK(s)
-```
+Les échelles sont générées pour que la bonne réponse tombe entre 10 % et 90 % de l'échelle (toujours centrable). Une fourchette laissée au milieu contient la réponse environ une fois sur quatre : c'est le plancher d'un départ centré.
 
-## Installer sur un téléphone
+**Vérification** : une passe de relecture complète a été faite (octobre 2026). Les corrections sont dans `qs/corrections.py` (par identifiant : énoncé, valeur, anecdote, ou `drop` pour retirer ; les identifiants ne bougent jamais). Les questions retirées sont désactivées à la fin de `02_questions_3.sql`. Continuez à utiliser « Signaler une erreur » (Profil > Version test > « Copier les signalements »).
 
-Copiez `app-debug.apk` sur le téléphone, ouvrez-le et autorisez l'installation depuis cette source. Ou, avec un câble : `adb install app-debug.apk`. C'est un APK de **debug** (signé avec la clé de debug) : adapté aux tests, pas à une publication sur le Play Store.
+## Données sur le téléphone
 
-## Ce qui est réel, ce qui est simulé
+Tout est sur le serveur : scores, XP et niveau, badges, missions, coffre, jokers de série, couleurs, statistiques du Profil, classements, divisions, saisons, collection. Le téléphone ne garde que les réglages (son, ambiance, rappel). Une réinstallation repart d'un compte neuf, sauf si le compte a été sécurisé par e-mail (« J’ai déjà un compte »). Le Profil permet de supprimer le compte.
 
-- **Réel** : questions, chrono, score, réponse exacte, tirage sans répétition, progression sauvegardée sur l'appareil, bouton « Signaler une erreur ».
-- **Simulé** : les classements mondiaux, les ligues, les autres joueurs. Il n'y a pas de serveur : votre rang est calculé à partir de joueurs fictifs. Un vrai classement demande un serveur (comptes, chrono côté serveur, anti-triche).
-- **Hors ligne** : l'appli fonctionne sans réseau. Les polices Google ne sont pas embarquées, l'appli utilise les polices du système.
+## L'aperçu dans Claude
 
-## La banque de questions (à vérifier)
-
-Les 1 017 questions ont été **écrites de mémoire par un assistant IA, sans vérification source par source**. Les valeurs sont celles couramment citées (arrondies, avec « environ »), mais certaines peuvent être fausses ou dépassées, surtout les populations, les capacités de stades, les records et les chiffres de fréquentation. Avant toute diffusion hors de votre cercle de test :
-
-1. Faites jouer, et utilisez **Signaler une erreur** à la révélation. Dans **Profil → Version test**, « Copier les signalements » place la liste (identifiant, question, valeur) dans le presse-papiers.
-2. Corrigez les entrées dans `qs/*.py` (une ligne par question : `Y(...)` pour une année, `N(...)` pour une quantité), puis relancez `python3 build_questions.py && python3 build_app.py`.
-3. Recommandation : recouper chaque valeur avec une source ouverte (Wikidata, Insee, data.gouv.fr) avant une vraie publication.
-
-Répartition : Sport 127, Géographie 124, Nature 100, Transports 106, Territoires 119, Histoire 146, Sciences 162, Arts 133.
+`artifact.html` est une version de démonstration **sans serveur** : banque locale, classements et ligues simulés, pas de divisions ni de saisons.
 
 ## Réglages utiles
 
-- Durée du chrono : `TL` dans `app.template.html` (25 s).
-- Questions par partie : 3, 5 ou 10, dans Profil → Version test.
-- Points : `ptsFromS` (décroissance de la récompense selon la largeur) et `EXACT_PTS` (150).
-- Identifiant de l'appli : `capacitor.config.json` (`app.fourchette.test`).
-- Version de Capacitor : 7 (Node 20+, Java 21). Si une version plus récente est exigée par votre Android Studio, mettez à jour `package.json`.
+- Chrono : `TL` dans `app.template.html` (25 s) et `_tl()` dans le SQL.
+- Fourchette : `FIX_W` (0,20) côté appli, `maxw` dans `submit_answer` côté serveur.
+- Combo : `submit_answer` (serveur) et `API.submit` (aperçu).
+- Questions par partie : Profil > Version test.
+- Identifiant de l'appli : `capacitor.config.json` (`app.fourchette.test`). Capacitor 7 (Node 20+, Java 21).
 
 ## Fichiers
 
-- `qs/` : les questions, une liste par thème. `build_questions.py` génère `questions.json` (échelles et repères calculés, contrôle des doublons et des bornes).
-- `app.template.html` : l'application (gabarit). `build_app.py` produit `www/index.html`.
-- `www/` : ce que Capacitor embarque dans l'APK.
-- `assets/` : icône et écran de démarrage.
-- `.github/workflows/build-apk.yml`, `build-apk.sh` : compilation.
-
-## Profil vierge
-
-Au premier lancement, tout est à zéro : aucune statistique, série ou badge fictif. Le profil, la série de jours, les graphiques et les moyennes viennent uniquement de vos réponses (stockées sur l'appareil). Le rang « Niveau » apparaît après 10 questions. Seuls les autres joueurs du classement et des ligues restent simulés.
-
-## Badges, son, survie
-
-- **32 badges** (paliers de questions, de parties, de jours de suite et de points, exploits : valeur exacte, séries sans faute, partie parfaite, réponse éclair, survie…). Animation de déblocage (médaille, rayons, confettis). Définitions : tableau `BD` dans `app.template.html`.
-- **Musique** : synthétisée en direct (Web Audio), aucun fichier audio. Une ambiance pour jouer, une plus rythmée en survie, un jingle distinct pour les badges. Réglages dans Profil > Son, haut-parleur sur l'écran de question. Coupée quand l'application passe en arrière-plan. Presets : objet `PRE`.
-- **Mode survie** : fenêtre fixée à 10 % de l'échelle, que l'on déplace. Une erreur et la partie s'arrête. Compte pour les badges de survie, pas pour les classements Niveau et Cumulé.
-
-## Mises à jour sans désinstaller
-
-Le dossier `signing/` contient une clé de signature de test, toujours la même. Chaque APK compilé (GitHub Actions ou `build-apk.sh`) est signé avec elle, et le numéro de version augmente à chaque compilation sur GitHub : la nouvelle version s'installe par-dessus l'ancienne et garde la progression des testeurs.
-
-- Une seule fois : les testeurs qui ont un APK compilé avant cette clé doivent le désinstaller (sa signature est différente).
-- Cette clé est publique (mot de passe `android`) : elle ne sert qu'aux tests. Pour le Play Store, il faudra une vraie clé, gardée secrète et jamais déposée dans le dépôt.
-- Ne supprimez pas `signing/test-debug.keystore` : sans elle, retour à la désinstallation obligatoire.
-
-## Défi du jour, niveaux, duel, rappels
-
-- **Défi du jour** : 5 questions tirées pour chaque joueur, une seule tentative par jour (quitter en cours compte comme tentative). Série de défis dédiée et 4 badges.
-- **Niveaux** : 5 XP plus les points par question, 20 XP par question réussie en survie, 100 XP par défi, 50 XP par badge. Titres : Novice, Curieux, Estimateur, Fin estimateur, Expert, Maître des fourchettes, Grand maître, Légende vivante. Animation à chaque niveau.
-- **Survie** : fenêtre de 10 %, puis 8 % après 10 réussites et 6 % après 20. Une vie bonus tous les 10 réussites.
-- **Duel** : sans serveur, par code. Le joueur A joue 5 questions et envoie un code F1. B le colle, joue les mêmes questions et renvoie un code F2 que A colle pour voir le résultat. Les codes contiennent les identifiants des questions : si la banque change (ids renumérotés), les anciens codes deviennent incompatibles.
-- **Rappel quotidien** : notification locale à l'heure choisie (Profil), ignorée le jour où le défi est déjà joué. Android 13+ demande l'autorisation à l'activation.
-- **Retours** : petit son juste / serré / raté / exact et vibration à la révélation, réglables dans Profil > Son et vibrations.
-- Extensions Capacitor ajoutées : `@capacitor/local-notifications`, `@capacitor/haptics`, `@capacitor/share` (installées par `npm install`, aucune autre action).
-
-## Serveur (Supabase) : comptes, vrais classements, ligues, défi commun
-
-L'APK se connecte au projet Supabase indiqué dans `sbconfig.json` (URL + clé publique, faite pour être dans l'appli). L'aperçu dans Claude reste en mode local (sans serveur).
-
-### Mise en place (une seule fois)
-1. Supabase > **Authentication > Sign In / Providers** : activer **Allow anonymous sign-ins**.
-2. Supabase > **SQL Editor** > New query : coller tout `server/01_schema.sql`, **Run**. (Si Supabase avertit d'une « opération destructive », confirmer : ce sont des `drop … if exists` sans effet sur les données.)
-3. Même chose avec `server/02_questions_1.sql`, puis `_2`, puis `_3` (la banque de questions).
-4. Vérifier : **Table Editor > questions** doit afficher 1 017 lignes.
-
-### Ce que fait le serveur
-- **Chrono et score côté serveur** : la question part sans la réponse ; le serveur note l'heure d'envoi, refuse les réponses arrivées après 25 s + 4 s de marge (0 point), calcule les points et ne renvoie la vraie valeur qu'après la réponse. Une question abandonnée compte 0.
-- **L'APK n'embarque plus la banque** : les réponses ne sont que sur le serveur.
-- **Défi du jour commun** : les mêmes 5 questions pour tous (une par thème, tirées le jour même, heure de Paris), une seule tentative, reprise possible si l'appli se ferme, **rang en direct** après chaque question et classement du jour.
-- **Classement mondial réel** : Niveau (moyenne par question, min. 10 questions) et Cumulé, sur 7 ou 28 jours, général ou par thème, Monde ou France (pays déduit de la langue du téléphone).
-- **Ligues** : créer, inviter par code, rejoindre, quitter ; classement sur 7 ou 28 jours.
-- **Comptes** : anonymes (pas d'e-mail), pseudo unique à choisir au premier lancement, suppression du compte depuis le Profil (exigé par le Play Store).
-- La survie et les duels passent aussi par le serveur (questions et score) mais ne comptent pas dans les classements.
-
-### Modifier les questions
-Éditer `qs/*.py`, puis `python3 build_questions.py && python3 build_server_questions.py`, et recoller les fichiers `server/02_questions_*.sql` dans le SQL Editor (les questions existantes sont mises à jour). Pour retirer une question : `update questions set active = false where id = 'SP001';`.
-
-### Test local du serveur
-`server/01_schema.sql` a été testé sur Postgres 16 avec une imitation minimale de Supabase (rôles, `auth.users`, `auth.uid()`), et l'appli de bout en bout contre un faux serveur Supabase local : comptes, parties, défi du jour (reprise, rang en direct), classements, ligues, duel, survie, suppression de compte.
+- `qs/*.py` : la banque de questions, un fichier par thème ; `qs/corrections.py` : les corrections.
+- `build_questions.py` → `questions.json` ; `build_server_questions.py` → `server/02_questions_*.sql` ; `build_app.py` → `www/index.html` (APK) et `artifact.html` (aperçu).
+- `app.template.html` : l'application (une seule page).
+- `server/` : le schéma et les mises à jour SQL.
+- `.github/workflows/build-apk.yml`, `build-apk.sh`, `capacitor.config.json`, `package.json`, `assets/`, `signing/`.

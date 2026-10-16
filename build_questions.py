@@ -1,6 +1,7 @@
 import sys, json, math, random, re
 sys.path.insert(0, 'qs')
 import sport, geo, nature, transports, terr, histoire, sciences, arts
+from corrections import CORR
 
 MODS = [sport, geo, nature, transports, terr, histoire, sciences, arts]
 THEMES = [m.D for m in MODS]
@@ -25,13 +26,16 @@ def year_scale(q, rnd):
     elif t >= 1200: sc, spans = 100, [250, 300]
     else: sc, spans = 200, [500, 600, 800]
     span = rnd.choice(spans)
-    u = rnd.uniform(.22, .78)
+    u = rnd.uniform(.1, .9)  # position de la réponse : n'importe où, mais toujours centrable (fourchette de 20 %)
     mn = t - u * span
     step = 10 if span <= 150 else 50
     mn = round(mn / step) * step
     mx = mn + span
-    if mx > 2030: mx = 2030; mn = mx - span
+    if mx > 2050: mx = 2050; mn = mx - span
     if mn < 0: mn = 0; mx = span
+    # garder la réponse entre 10 % et 90 % de l'échelle
+    while (t - mn) / span < .1 and mx + step <= 2050: mn -= step; mx -= step
+    while (t - mn) / span > .9: mn += step; mx += step
     # tick step
     for ts in (10, 20, 25, 50, 100, 200):
         ticks = [v for v in range(int(math.ceil(mn / ts) * ts), int(mx) + 1, ts)]
@@ -42,13 +46,13 @@ def log_scale(q, rnd):
     t = q['v']
     small = t <= 100
     F = rnd.choice([30, 100, 300]) if small else rnd.choice([100, 300, 1000])
-    u = rnd.uniform(.25, .75)
+    u = rnd.uniform(.1, .9)  # position de la réponse : n'importe où, mais toujours centrable
     mn = t / (F ** u)
     mn = nice_floor(mn)
     mx = nice_ceil(mn * F)
     # make sure the truth is comfortably inside
-    while t < mn * (mx / mn) ** .08: mn = nice_floor(mn * .7)
-    while t > mx / (mx / mn) ** .08: mx = nice_ceil(mx * 1.4)
+    while t < mn * (mx / mn) ** .1: mn = nice_floor(mn * .7)
+    while t > mx / (mx / mn) ** .1: mx = nice_ceil(mx * 1.4)
     cands = []
     for pat in ((1, 3), (1, 2, 5)):
         c = []
@@ -64,13 +68,16 @@ def log_scale(q, rnd):
     if len(ticks) > 6: ticks = ticks[::2]
     return dict(a=clean(mn), b=clean(mx), c=1, tk=ticks)
 
-out = []; seen = set(); issues = []
+out = []; seen = set(); issues = []; dropped = []
 for ti, m in enumerate(MODS):
     for n, q in enumerate(m.Q):
         key = re.sub(r'\W+', ' ', q['q'].lower()).strip()
         if key in seen: issues.append(('dup', q['q'])); continue
         seen.add(key)
         qid = f"{PRE[ti]}{n+1:03d}"
+        c = CORR.get(qid, {})
+        if c.get('drop'): dropped.append(qid); continue
+        q = dict(q, **{k: c[k] for k in ('q', 'v', 'fact') if k in c})
         rnd = random.Random(qid)
         s = year_scale(q, rnd) if q['k'] == 'y' else log_scale(q, rnd)
         t = q['v']
@@ -90,5 +97,6 @@ by = {}
 for e in out: by[THEMES[e['d']]] = by.get(THEMES[e['d']], 0) + 1
 print(len(out), by)
 print('issues:', issues[:20], len(issues))
-json.dump({'themes': THEMES, 'q': out}, open('questions.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+print('retirées:', dropped)
+json.dump({'themes': THEMES, 'q': out, 'drop': dropped}, open('questions.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 import os; print(os.path.getsize('questions.json'), 'bytes')

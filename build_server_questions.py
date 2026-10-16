@@ -25,5 +25,8 @@ for k, part in enumerate(parts, 1):
     sql += ('\non conflict (id) do update set theme=excluded.theme, t=excluded.t, unit=excluded.unit, kind=excluded.kind,'
             ' vmin=excluded.vmin, vmax=excluded.vmax, truth=excluded.truth, sc=excluded.sc, ticks=excluded.ticks,'
             ' fmt=excluded.fmt, fact=excluded.fact, is_int=excluded.is_int, active=true;\n')
+    if k == len(parts) and d.get('drop'):
+        sql += ('-- Questions retirées après vérification\nupdate public.questions set active=false where id in (%s);\n'
+                % ', '.join(lit(i) for i in d['drop']))
     open(os.path.join(out, '02_questions_%d.sql' % k), 'w', encoding='utf-8').write(sql)
 print(len(rows), 'questions en', len(parts), 'fichiers')

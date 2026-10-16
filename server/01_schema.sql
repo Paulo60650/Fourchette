@@ -215,8 +215,11 @@ end $$;
 
 create or replace function public.submit_answer(p_aid bigint, p_lo float8, p_hi float8, p_exact boolean default false) returns json
 language plpgsql security definer set search_path = public as $$
+-- Fourchette fixe (20 % de l'échelle, 10/8/6 % en survie) : 100 points si la bonne réponse est au centre,
+-- 50 au bord, 0 dehors. Valeur exacte : 150 points.
 declare uid uuid := public._me(); a public.attempts; q public.questions;
-  v_el float8; v_late boolean; v_in boolean; v_pts int; v_tier text; s float8;
+  v_el float8; v_late boolean; v_in boolean; v_pts int; v_tier text;
+  plo float8; phi float8; pt float8; w float8; maxw float8; c float8;
 begin
   select * into a from public.attempts where id = p_aid and user_id = uid for update;
   if not found then raise exception 'Question introuvable'; end if;
@@ -233,11 +236,21 @@ begin
     v_pts := case when v_in then 150 else 0 end;
     v_tier := case when v_in then 'tight' else 'out' end;
   else
+    if q.kind = 'lin' then
+      plo := (p_lo - q.vmin) / (q.vmax - q.vmin); phi := (p_hi - q.vmin) / (q.vmax - q.vmin); pt := (q.truth - q.vmin) / (q.vmax - q.vmin);
+    else
+      plo := ln(p_lo / q.vmin) / ln(q.vmax / q.vmin); phi := ln(p_hi / q.vmin) / ln(q.vmax / q.vmin); pt := ln(q.truth / q.vmin) / ln(q.vmax / q.vmin);
+    end if;
+    w := phi - plo;
+    -- largeur imposée (marge pour les arrondis d'affichage)
+    maxw := case when a.mode = 'surv' then 0.10 else 0.20 end + 0.05
+            + case when q.kind = 'lin' then 1.0 / (q.vmax - q.vmin) else 0 end;
+    if w > maxw then raise exception 'Fourchette trop large'; end if;
     v_in := q.truth between p_lo and p_hi;
     if v_in then
-      s := case when q.kind = 'lin' then (p_hi - p_lo) / q.sc else ln(p_hi / p_lo) end;
-      v_pts := round(100 * exp(-1.2 * s));
-      v_tier := case when v_pts >= 70 then 'tight' else 'wide' end;
+      c := greatest(0, least(1, 1 - abs(pt - (plo + phi) / 2) / greatest(w / 2, 1e-9)));
+      v_pts := round(50 + 50 * c);
+      v_tier := case when v_pts >= 80 then 'tight' else 'wide' end;
     else
       v_pts := 0; v_tier := 'out';
     end if;
