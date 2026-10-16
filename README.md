@@ -1,12 +1,12 @@
 # La Fourchette — version de test Android
 
-Jeu d'estimation : une fourchette fixe de 20 % de l'échelle part du milieu, on la fait glisser autour de son estimation. Bonne réponse au centre : 100 points, au bord : 50, dehors : 0. Valeur exacte : 150. 1 014 questions en 8 thèmes, chrono de 25 s, tout est vérifié par un serveur Supabase.
+Jeu d'estimation et de calibration : la fourchette part au milieu, à sa largeur minimale (3 % de l'échelle) ; le joueur tire ses bornes et la déplace pour encadrer la bonne réponse. Dedans : plus elle est étroite, plus elle rapporte (100 points à 3 %, 87 à 10 %, 69 à 20 %, 52 à 30 %, 27 à 50 %). Dehors : 0. Valeur exacte : 150. Toute la compétence est de doser la largeur selon sa certitude. 1 014 questions en 8 thèmes, chrono de 25 s, tout est vérifié par un serveur Supabase.
 
 ## Ce que contient l'appli
 
-- **Parties** : aléatoires ou par thème, 3 / 5 / 10 questions ou illimité. Combo de centrage (réponses centrées à 80 % ou plus : ×1, ×1,2, ×1,5, ×2).
+- **Parties** : aléatoires ou par thème, 3 / 5 / 10 questions ou illimité. Combo (bonnes réponses avec une fourchette de 13 % ou moins : ×1, ×1,2, ×1,5, ×2).
 - **Défi du jour** : les mêmes 5 questions pour tous, une tentative, rang en direct, classement du jour, partage en grille d'emojis, série avec jokers (gel de série).
-- **Mode Expert** : fourchette de 10 %, points doublés, débloqué à 80 questions classées.
+- **Mode Expert** : fourchette de 10 % au plus, points doublés, débloqué à 80 questions classées.
 - **Survie** : fourchette de 10 %, puis 8 % et 6 %, une vie bonus tous les 10 ; hors classement.
 - **Duel** : 5 questions identiques par code envoyé en message ; hors classement.
 - **Classements réels** : mondial (Niveau = moyenne par question, min. 10 ; Cumulé), sur 7 jours ou la saison (mois en cours, badge de fin de saison), général ou par thème, Monde ou France, avec rival.
@@ -21,14 +21,14 @@ Jeu d'estimation : une fourchette fixe de 20 % de l'échelle part du milieu, on 
 
 1. **Authentication > Sign In / Providers** : activer **Allow anonymous sign-ins** (comptes sans e-mail).
 2. **SQL Editor**, dans l'ordre, chaque fichier collé puis **Run** :
-   `server/01_schema.sql`, `server/02_questions_1.sql`, `_2`, `_3`, `server/03_fenetre_20.sql`, `server/04_addictif.sql`, `server/05_progression.sql`.
+   `server/01_schema.sql`, `server/02_questions_1.sql`, `_2`, `_3`, `server/03_fenetre_20.sql`, `server/04_addictif.sql`, `server/05_progression.sql`, `server/06_fourchette_libre.sql`.
    Tous peuvent être relancés sans perte de données.
 3. **E-mail (récupération de compte)** :
    - **Authentication > Emails > Templates** : dans « Magic Link » et « Change Email Address », ajouter le code `{{ .Token }}` au message (l'appli demande un code à 6 chiffres, pas un lien).
    - **Authentication > Emails > SMTP Settings** : brancher un SMTP (Brevo, Resend, etc.). L'expéditeur par défaut de Supabase n'écrit qu'aux membres de l'équipe du projet, avec un très petit quota.
 4. `sbconfig.json` contient l'URL du projet et la clé **publique** (faite pour être dans l'appli). Ne jamais y mettre la clé `secret` / `service_role`.
 
-Anti-triche : l'APK n'embarque aucune réponse. Le serveur envoie la question sans la réponse, chronomètre (25 s + 4 s de marge), vérifie la largeur de la fourchette, calcule les points et le combo, puis révèle la valeur.
+Anti-triche : l'APK n'embarque aucune réponse. Le serveur envoie la question sans la réponse, chronomètre (25 s + 4 s de marge), vérifie la largeur de la fourchette (Expert, Survie), calcule les points et le combo, puis révèle la valeur.
 
 ## Compiler l'APK
 
@@ -46,7 +46,7 @@ python3 build_questions.py && python3 build_server_questions.py && python3 build
 
 et recoller `server/02_questions_*.sql` dans le SQL Editor (mise à jour des questions existantes). Retirer une question : `update questions set active = false where id = 'SP001';`.
 
-Les échelles sont générées pour que la bonne réponse tombe entre 10 % et 90 % de l'échelle (toujours centrable). Une fourchette laissée au milieu contient la réponse environ une fois sur quatre : c'est le plancher d'un départ centré.
+Les échelles sont générées pour que la bonne réponse tombe entre 10 % et 90 % de l'échelle. Une fourchette laissée telle quelle (3 % au milieu) ne contient presque jamais la réponse : ne rien faire ne rapporte rien.
 
 **Vérification** : une passe de relecture complète a été faite (octobre 2026). Les corrections sont dans `qs/corrections.py` (par identifiant : énoncé, valeur, anecdote, ou `drop` pour retirer ; les identifiants ne bougent jamais). Les questions retirées sont désactivées à la fin de `02_questions_3.sql`. Continuez à utiliser « Signaler une erreur » (Profil > Version test > « Copier les signalements »).
 
@@ -61,7 +61,8 @@ Tout est sur le serveur : scores, XP et niveau, badges, missions, coffre, jokers
 ## Réglages utiles
 
 - Chrono : `TL` dans `app.template.html` (25 s) et `_tl()` dans le SQL.
-- Fourchette : `FIX_W` (0,20) côté appli, `maxw` dans `submit_answer` côté serveur.
+- Fourchette : `W_MIN` (0,03) et `EXP_MAXW` (0,10) côté appli ; barème `100 × ((1 − max(w; 0,035)) / 0,965)²` dans `precOf` (appli) et `submit_answer` (serveur, 06). La largeur choisie est gardée dans `attempts.wid`.
+- Profil : « Votre précision » compare le taux de bonnes fourchettes à la zone conseillée (55 à 90 %) et donne la largeur moyenne.
 - Combo : `submit_answer` (serveur) et `API.submit` (aperçu).
 - Questions par partie : Profil > Version test.
 - Identifiant de l'appli : `capacitor.config.json` (`app.fourchette.test`). Capacitor 7 (Node 20+, Java 21).

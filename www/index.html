@@ -265,7 +265,8 @@ ul{padding:0;list-style:none}
 .dist-l{display:flex;justify-content:space-between;font-size:12px;opacity:.9}
 
 /* Profil */
-.meter{position:relative;height:14px;border-radius:99px;background:linear-gradient(90deg,var(--c-terr),var(--accent) 70%,var(--c-nature));margin:26px 0 8px}
+.meter{position:relative;height:14px;border-radius:99px;background:color-mix(in srgb,var(--ink2) 22%,transparent);margin:26px 0 8px}
+.meter .okz{position:absolute;top:0;bottom:0;border-radius:99px;background:var(--c-nature);opacity:.75}
 .meter .mk{position:absolute;top:-7px;width:4px;height:28px;border-radius:2px;background:var(--ink);margin-left:-2px}
 .meter .tg{position:absolute;top:-7px;width:0;height:28px;border-left:2px dashed var(--ink2);margin-left:-1px}
 .meter .l{position:absolute;top:-24px;font-size:12px;font-weight:700;transform:translateX(-50%);white-space:nowrap}
@@ -628,14 +629,18 @@ var EXACT_PTS=150;
 function exactHit(q,v){return q.kind==='lin'?Math.abs(v-q.truth)<0.5:Math.abs(v/q.truth-1)<0.005}
 function score(q,lo,hi,exact){
   if(exact){var h=exactHit(q,lo);return {pts:h?EXACT_PTS:0,inside:h,tier:h?'tight':'out'}}
-  var inside=q.truth>=lo&&q.truth<=hi;
-  if(!inside)return {pts:0,inside:false,tier:'out'};
-  var c=centrage(q,lo,hi),pts=Math.round(50+50*c);
-  return {pts:pts,inside:true,tier:pts>=90?'tight':'wide',c:c};
+  var inside=q.truth>=lo&&q.truth<=hi,w=wOf(q,lo,hi),p=precOf(w);
+  if(!inside)return {pts:0,inside:false,tier:'out',w:w};
+  return {pts:Math.round(100*p),inside:true,tier:p>=0.8?'tight':'wide',c:p,w:w};
 }
-/* Fourchette fixe de 20 % : 100 points si la bonne réponse est au centre, 50 au bord, 0 dehors */
-var FIX_W=0.20;
-function centrage(q,lo,hi){var a=pos(q,lo),b=pos(q,hi),h=(b-a)/2;if(h<=0)return 0;return Math.max(0,Math.min(1,1-Math.abs(pos(q,q.truth)-(a+b)/2)/h))}
+/* Fourchette libre : elle part au minimum (3 % de l'échelle), au milieu. Dedans : 100 points à 3 %,
+   de moins en moins quand on l'élargit (environ 50 à 30 %, 0 à 100 %). Dehors : 0. Expert : 10 % maximum, points ×2. */
+var W_MIN=0.03,EXP_MAXW=0.10;
+var W_FLOOR=0.035; /* marge d'arrondi : la fourchette de départ vaut toujours 100 */
+function wOf(q,lo,hi){return Math.max(W_MIN,Math.min(1,pos(q,hi)-pos(q,lo)))}
+function precOf(w){return Math.pow((1-Math.max(W_FLOOR,w))/(1-W_FLOOR),2)}
+function ptsOfW(w){return Math.round(100*precOf(w))}
+function pctW(w){return Math.round(w*100)}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function initials(n){return n==='Vous'?'V':n.charAt(0).toUpperCase()}
 function ac(n){if(n==='Vous')return 'var(--a1)';var h=0,i;for(i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))%6;return 'var(--a'+(h+1)+')'}
@@ -921,7 +926,7 @@ var BD=[
   B('p50k','Légende','Cumuler 50 000 points.','epic','crown',50000,ptsTot),
   B('ex1','Dans le mille','Trouver une valeur exacte.','bronze','target',1,exCount),
   B('ex10','Œil de lynx','Trouver 10 valeurs exactes.','gold','target',10,exCount),
-  B('t90','Tir groupé','Une fourchette centrée à 80 % ou plus.','silver','target',1,function(){return LOG.some(function(e){return !e.x&&(e.c!=null?e.c>=0.8:e.p>=90)})?1:0}),
+  B('t90','Tir groupé','Une bonne réponse avec une fourchette de 13 % de l’échelle ou moins.','silver','target',1,function(){return LOG.some(function(e){return !e.x&&(e.c!=null?e.c>=0.8:e.p>=90)})?1:0}),
   B('cb2','En feu','Atteindre un combo ×2.','gold','flame',1,function(){return LOG.some(function(e){return e.m>=2})?1:0}),
   B('exp','Expert','Jouer une partie en mode Expert.','gold','crown',1,function(){return ACH.expert||0}),
   B('r5','Sans faute ×5','5 fourchettes justes d’affilée.','bronze','shield',5,maxRun),
@@ -1167,7 +1172,7 @@ function newGame(theme){
 /* Accueil */
 function weekStart(){var d=new Date();d.setHours(0,0,0,0);var w=(d.getDay()+6)%7;d.setDate(d.getDate()-w);return d.getTime()}
 var MPOOL=[
-  ['c90','10 réponses centrées à 90 % ou plus',10,function(ws){return LOG.filter(function(e){return e.t>=ws&&!e.x&&(e.c||0)>=0.9}).length}],
+  ['c90','10 bonnes réponses avec une fourchette de 8 % ou moins',10,function(ws){return LOG.filter(function(e){return e.t>=ws&&!e.x&&(e.c||0)>=0.9}).length}],
   ['dd3','Terminer 3 défis du jour',3,function(ws){var k=dkey(ws);return Object.keys(DAILY.hist||{}).filter(function(d){return d>=k}).length}],
   ['duel1','Battre un ami en duel',1,function(ws){return (DUEL.wt||[]).filter(function(t){return t>=ws}).length}],
   ['q60','Répondre à 60 questions',60,function(ws){return LOG.filter(function(e){return e.t>=ws}).length}],
@@ -1306,7 +1311,7 @@ function home(){
      '<button id="rand"><span class="e">⚡</span><b>Partie</b><span class="m">'+(GL?GL+' questions':'illimitée')+'</span></button>'+
      '<button id="goSurv"><span class="e">🛡️</span><b>Survie</b><span class="m">Record '+SURV.best+'</span></button>'+
      '<button id="goDuel"><span class="e">⚔️</span><b>Duel</b><span class="m">Un ami</span></button>'+
-     '<button id="goExp" class="'+(expertOk()?'':'lock')+'"><span class="e">👑</span><b>Expert</b><span class="m">'+(expertOk()?'×2 points':(NET?'🔒 '+Math.min(80,ME.ranked||0)+'/80':'🔒 niveau 10'))+'</span></button>'+
+     '<button id="goExp" class="'+(expertOk()?'':'lock')+'"><span class="e">👑</span><b>Expert</b><span class="m">'+(expertOk()?'10 % · ×2':(NET?'🔒 '+Math.min(80,ME.ranked||0)+'/80':'🔒 niveau 10'))+'</span></button>'+
    '</div>'+
    '<div class="strip3">'+
      (chestOk?'<button class="hot" id="chest">🎁 Coffre<br>prêt !</button>':'<button disabled style="opacity:.6">🎁 Coffre<br><span class="v">demain</span></button>')+
@@ -1338,13 +1343,13 @@ function home(){
 
 function how(){
   openSheet('<h2>Comment ça marche</h2>'+
-   '<div class="step"><div class="ic" style="background:var(--a2)">1</div><p><b>Placez la fourchette</b>Une fourchette fixe de 20 % de l\u2019échelle part du milieu : faites-la glisser pour encadrer votre estimation.</p></div>'+
-   '<div class="step"><div class="ic" style="background:var(--a3)">2</div><p><b>Visez le centre</b>Bonne réponse au centre de la fourchette : 100 points. Au bord : 50. Dehors : 0. Sûr de vous ? Tapez la valeur exacte : 150 points si c\u2019est la bonne, 0 sinon.</p></div>'+
+   '<div class="step"><div class="ic" style="background:var(--a2)">1</div><p><b>Réglez votre fourchette</b>Elle part au milieu, à sa largeur minimale. Tirez ses bornes pour encadrer la bonne réponse, ou faites-la glisser : à vous de choisir la largeur.</p></div>'+
+   '<div class="step"><div class="ic" style="background:var(--a3)">2</div><p><b>Pariez sur votre certitude</b>Dedans, plus la fourchette est étroite, plus elle rapporte : 100 points à 3 % de l\u2019échelle, environ 85 à 10 %, 50 à 30 %. Dehors : 0. Toute la compétence est là : large quand vous hésitez, serrée quand vous savez. Très sûr ? Tapez la valeur exacte : 150 points si c\u2019est la bonne, 0 sinon.</p></div>'+
    '<div class="step"><div class="ic" style="background:var(--a4)">3</div><p><b>Répondez vite</b>Vous avez 25 secondes par question : assez pour réfléchir, pas assez pour chercher la réponse.</p></div>'+
    '<div class="step"><div class="ic" style="background:var(--a5)">4</div><p><b>Jouez comme vous voulez</b>En aléatoire ou par thème, quand vous voulez. Vos questions sont tirées au hasard, donc impossibles à connaître à l’avance.</p></div>'+
    '<div class="step"><div class="ic" style="background:var(--a6)">5</div><p><b>Montez au classement</b>Deux classements, en général et par thème : le niveau (moyenne de points par question) et le cumul (total de points, qui récompense ceux qui jouent le plus). Vos ligues comparent le niveau entre amis.</p></div>'+
    '<div class="step"><div class="ic" style="background:var(--a1)">6</div><p><b>Survie et badges</b>En mode survie, la fourchette fait 10 % de l\u2019échelle, puis 8 % après 10 réussites et 6 % après 20. Vous la déplacez sans la redimensionner. Une vie bonus tous les 10 réussites, sinon une erreur arrête la série. Paliers et exploits débloquent des badges. Chaque jour, un défi de 5 questions en une seule tentative entretient votre série.</p></div>'+
-   '<div class="step"><div class="ic" style="background:var(--a3)">7</div><p><b>Combo, missions, divisions</b>Enchaînez les réponses centrées à 80 % : combo ×1,2, ×1,5 puis ×2. Trois missions par semaine, un coffre chaque jour, des jokers pour sauver votre série. Chaque semaine, votre division de 30 joueurs : les 5 premiers montent, les 5 derniers descendent. Chaque mois, une nouvelle saison.</p></div>'+
+   '<div class="step"><div class="ic" style="background:var(--a3)">7</div><p><b>Combo, missions, divisions</b>Enchaînez les bonnes réponses serrées (13 % de l\u2019échelle ou moins) : combo ×1,2, ×1,5 puis ×2. Trois missions par semaine, un coffre chaque jour, des jokers pour sauver votre série. Chaque semaine, votre division de 30 joueurs : les 5 premiers montent, les 5 derniers descendent. Chaque mois, une nouvelle saison.</p></div>'+
    '<button class="btn primary" data-close style="margin-top:12px">Compris</button>');
 }
 
@@ -1375,12 +1380,12 @@ function question(){
    '<div class="knob" id="kHi" role="slider" tabindex="0" aria-label="Borne haute"></div></div>'+
    '<div class="ticks" aria-hidden="true">'+ticks+'</div></div>'+
    '<div class="gain"'+(G.surv?' hidden':'')+'><p class="small" id="wInfo"></p><div style="text-align:right"><b id="pIn"></b><p class="small muted">points si dedans</p></div></div>'+
-   '<p class="hint">'+(G.surv?'Fourchette fixe de '+Math.round(survGap()*100)+' % de l’échelle : déplacez-la. Elle rétrécit à 10 et 20 réussites. Une vie bonus tous les 10. '+(G.lives?'Vies bonus : '+G.lives+'.':'Une erreur et c’est fini.'):TL+' secondes. Déplacez la fourchette : 100 points si la bonne réponse est au centre, 50 au bord, 0 dehors. À zéro seconde, votre position est validée.')+'</p>'+
+   '<p class="hint">'+(G.surv?'Fourchette fixe de '+Math.round(survGap()*100)+' % de l’échelle : déplacez-la. Elle rétrécit à 10 et 20 réussites. Une vie bonus tous les 10. '+(G.lives?'Vies bonus : '+G.lives+'.':'Une erreur et c’est fini.'):TL+' secondes. Élargissez la fourchette si vous hésitez, resserrez-la si vous êtes sûr : plus elle est étroite, plus elle rapporte. Dehors : 0. À zéro seconde, votre fourchette est validée.')+'</p>'+
    '<div class="qfoot"><button class="btn primary" id="ok">'+(G.surv?'Valider la fourchette':'Valider ma fourchette')+'</button></div>'+
    '</section>';
   show(html,false);
   $('#quit').onclick=function(){home()};
-  var updR=mountRange(q,G.surv?(G.gap=survGap()):(G.expert?0.10:FIX_W)),exact=false;
+  var updR=mountRange(q,G.surv?(G.gap=survGap()):0,G.expert?EXP_MAXW:1),exact=false;
   bindSnd();
   function setMode(e){
     exact=e;
@@ -1412,7 +1417,7 @@ function question(){
       }
       else{
         var el=Math.round((Date.now()-G.t0)/100)/10;
-        ST[q.dom].n++;ST[q.dom].s+=r.pts;G.ans[i].xp=5+r.pts;addXP(5+r.pts);LOG.push({t:Date.now(),d:q.dom,q:q.id,i:r.inside?1:0,p:r.pts,b:G.ans[i].base,c:r.inside?(useEx?1:+(r.centr!=null?r.centr:centrage(q,lo,hi)).toFixed(3)):0,m:+r.mult||1,k:r.tier,x:useEx?1:0,s:el,l:late?1:0});if(LOG.length>4000)LOG.shift();
+        ST[q.dom].n++;ST[q.dom].s+=r.pts;G.ans[i].xp=5+r.pts;addXP(5+r.pts);LOG.push({t:Date.now(),d:q.dom,q:q.id,i:r.inside?1:0,p:r.pts,b:G.ans[i].base,c:r.inside?(useEx?1:+(r.centr!=null?r.centr:precOf(wOf(q,lo,hi))).toFixed(3)):0,m:+r.mult||1,k:r.tier,w:useEx?null:+wOf(q,lo,hi).toFixed(3),x:useEx?1:0,s:el,l:late?1:0});if(LOG.length>4000)LOG.shift();
         checkBadges();save();
       }
       reveal();
@@ -1424,9 +1429,10 @@ function question(){
   $('#ok').onclick=function(){submit(false)};
   startT(function(){submit(true)},it.elapsed||0);
 }
-function mountRange(q,fixed){
+function mountRange(q,fixed,maxw){
   var rail=$('#rail'),fill=$('#fill'),kL=$('#kLo'),kH=$('#kHi');
-  var gap=fixed||.04,lo=.5-gap/2,hi=.5+gap/2,off=0,drag=false;
+  maxw=maxw||1;
+  var gap=fixed||W_MIN,lo=.5-gap/2,hi=.5+gap/2,off=0,drag=null;
   if(fixed)rail.classList.add('fixed');
   function upd(){
     var L=val(q,lo),H=val(q,hi);
@@ -1439,20 +1445,24 @@ function mountRange(q,fixed){
     kL.setAttribute('aria-valuetext',q.f(L)+' '+q.unit);kH.setAttribute('aria-valuetext',q.f(H)+' '+q.unit);
     kL.setAttribute('aria-valuemin',0);kL.setAttribute('aria-valuemax',100);kL.setAttribute('aria-valuenow',Math.round(lo*100));
     kH.setAttribute('aria-valuemin',0);kH.setAttribute('aria-valuemax',100);kH.setAttribute('aria-valuenow',Math.round(hi*100));
-    $('#pIn').textContent=G.expert?'100 à 200':'50 à 100';
-    $('#wInfo').textContent='Fourchette de '+(G.expert?'10':'20')+' % : '+(q.kind==='lin'?(H-L)+' ans':'×'+(H/L).toFixed(1).replace('.',','))+'. Centrez la bonne réponse.';
+    if(!fixed){
+      var w=wOf(q,L,H),p=ptsOfW(w)*(G.expert?2:1);
+      $('#pIn').textContent=p;
+      $('#wInfo').textContent='Fourchette de '+pctW(w)+' % de l’échelle'+(q.kind==='lin'?' ('+(H-L)+' ans)':'')+(G.expert?' · 10 % maximum':'')+'.';
+    }
     S.cur.lo=L;S.cur.hi=H;
   }
   function nx(x){var r=rail.getBoundingClientRect();return Math.max(0,Math.min(1,(x-r.left)/r.width))}
-  function setX(x,which){
-    var n=nx(x);
-    if(which==='lo')lo=Math.min(n,hi-gap);else hi=Math.max(n,lo+gap);upd();
+  function setK(n,which){
+    if(which==='lo')lo=Math.max(hi-maxw,Math.min(n,hi-gap));else hi=Math.min(lo+maxw,Math.max(n,lo+gap));
+    if(lo<0){lo=0}if(hi>1){hi=1}upd();
   }
-  function setC(x){lo=Math.max(0,Math.min(1-gap,nx(x)-off-gap/2));hi=lo+gap;upd()}
+  function setC(x){var g=hi-lo;lo=Math.max(0,Math.min(1-g,nx(x)-off));hi=lo+g;upd()}
   function bind(k,which){
-    var on=false;
-    k.addEventListener('pointerdown',function(e){on=true;k.setPointerCapture(e.pointerId);k.focus();if(fixed)off=nx(e.clientX)-(lo+gap/2);e.preventDefault();e.stopPropagation()});
-    k.addEventListener('pointermove',function(e){if(on){if(fixed)setC(e.clientX);else setX(e.clientX,which)}});
+    var on=false,cur=which,sx=0;
+    /* bornes collées (fourchette minimale) : c'est le sens du geste qui choisit la borne */
+    k.addEventListener('pointerdown',function(e){on=true;k.setPointerCapture(e.pointerId);k.focus();sx=e.clientX;cur=(!fixed&&hi-lo<0.08)?null:which;if(fixed)off=nx(e.clientX)-lo;e.preventDefault();e.stopPropagation()});
+    k.addEventListener('pointermove',function(e){if(!on)return;if(fixed){setC(e.clientX);return}if(!cur){if(Math.abs(e.clientX-sx)<3)return;cur=e.clientX<sx?'lo':'hi'}setK(nx(e.clientX),cur)});
     k.addEventListener('pointerup',function(){on=false});
     k.addEventListener('pointercancel',function(){on=false});
     k.addEventListener('keydown',function(e){
@@ -1460,21 +1470,20 @@ function mountRange(q,fixed){
       if(e.key==='ArrowLeft'||e.key==='ArrowDown')d=-step;else if(e.key==='ArrowRight'||e.key==='ArrowUp')d=step;else return;
       e.preventDefault();
       if(fixed){lo=Math.max(0,Math.min(1-gap,lo+d));hi=lo+gap;upd()}
-      else if(which==='lo')lo=Math.max(0,Math.min(hi-gap,lo+d));else hi=Math.min(1,Math.max(lo+gap,hi+d));upd();
+      else setK((which==='lo'?lo:hi)+d,which);
     });
   }
   bind(kL,'lo');bind(kH,'hi');
+  /* Rail : toucher dans la fourchette la déplace ; toucher à côté tire la borne la plus proche */
   rail.addEventListener('pointerdown',function(e){
-    if(fixed){drag=true;off=0;rail.setPointerCapture(e.pointerId);setC(e.clientX);return}
-    if(e.target!==rail&&!e.target.classList.contains('bar')&&e.target!==fill)return;
-    var r=rail.getBoundingClientRect(),n=(e.clientX-r.left)/r.width;
-    setX(e.clientX,Math.abs(n-lo)<Math.abs(n-hi)?'lo':'hi');
+    var n=nx(e.clientX);
+    rail.setPointerCapture(e.pointerId);
+    if(fixed||(hi-lo>0.06&&n>lo&&n<hi)){drag='c';off=fixed?(hi-lo)/2:n-lo;setC(e.clientX);return}
+    drag=Math.abs(n-lo)<Math.abs(n-hi)?'lo':'hi';setK(n,drag);
   });
-  if(fixed){
-    rail.addEventListener('pointermove',function(e){if(drag)setC(e.clientX)});
-    rail.addEventListener('pointerup',function(){drag=false});
-    rail.addEventListener('pointercancel',function(){drag=false});
-  }
+  rail.addEventListener('pointermove',function(e){if(!drag)return;if(drag==='c')setC(e.clientX);else setK(nx(e.clientX),drag)});
+  rail.addEventListener('pointerup',function(){drag=null});
+  rail.addEventListener('pointercancel',function(){drag=null});
   upd();
   return upd;
 }
@@ -1510,12 +1519,12 @@ function ruler(q,a){
 function reveal(){
   S.view='reveal';
   var set=G.set,i=G.qi,q=set[i],a=G.ans[i],last=!G.endless&&i===G.len-1;
-  var vt=G.surv?(a.inside?'Survécu':(a.saved?'Vie perdue':'Éliminé')):(a.exact?{tight:'Pile sur la bonne valeur',out:'Raté, 0 point'}:{tight:'Dedans, bien centré',wide:'Dedans, mais décentré',out:'Raté, 0 point'})[a.tier];
+  var vt=G.surv?(a.inside?'Survécu':(a.saved?'Vie perdue':'Éliminé')):(a.exact?{tight:'Pile sur la bonne valeur',out:'Raté, 0 point'}:{tight:'Dedans, et serré',wide:'Dedans, mais large',out:'Raté, 0 point'})[a.tier];
   if(G.surv)a.tier=a.inside?'tight':'out';
   var html='<section class="'+dc(q)+'">'+
    '<div class="dband"></div>'+
    '<div class="qtop" style="margin-bottom:12px"><span class="qmeta">'+(G.surv?'Survie':'Question '+qnum(i)+(G.endless?' · '+sum(G.ans)+' pts':' sur '+qtot()))+'</span><span class="qright"><span class="dchip">'+q.dom+'</span>'+sndBtn()+'</span></div>'+
-   '<span class="verdict '+a.tier+'">'+vt+'</span>'+(!G.surv&&!a.exact&&a.inside?'<span class="xpchip">Centrage '+Math.round(centrage(q,a.lo,a.hi)*100)+' %</span>':'')+(a.mult>1?'<span class="combo big">🔥 Combo ×'+String(a.mult).replace('.',',')+'</span>':(a.kPrev>=2&&!a.combo&&!G.surv&&!G.duel?'<span class="combo lost">Combo perdu</span>':''))+(a.xp?'<span class="xpchip">+'+a.xp+' XP</span>':'')+
+   '<span class="verdict '+a.tier+'">'+vt+'</span>'+(!G.surv&&!a.exact&&a.inside?'<span class="xpchip">Fourchette de '+pctW(wOf(q,a.lo,a.hi))+' %</span>':'')+(a.mult>1?'<span class="combo big">🔥 Combo ×'+String(a.mult).replace('.',',')+'</span>':(a.kPrev>=2&&!a.combo&&!G.surv&&!G.duel?'<span class="combo lost">Combo perdu</span>':''))+(a.xp?'<span class="xpchip">+'+a.xp+' XP</span>':'')+
    nearMiss(q,a)+
    (G.surv&&a.bonus?'<p class="lifeline">+1 vie bonus ! '+(G.run===10||G.run===20?'La fourchette passe à '+Math.round(survGap()*100)+' %.':'')+'</p>':'')+
    (NET&&G.daily?'<p class="lifeline" id="live" hidden></p>':'')+
@@ -1542,7 +1551,7 @@ function reveal(){
     if(pal)setTimeout(function(){sfx('palier');toast('Palier '+nf.format(Math.floor(g1/250)*250)+' points !')},700);
     if(a.mult>1)setTimeout(function(){sfx('combo'+Math.min(3,a.combo))},350);
   }
-  if(a.base>=100||a.pts>=100&&!G.surv)celebrate();
+  if(!G.surv&&a.inside&&(a.base>=(G.expert?180:90)||a.exact))celebrate();
   checkMissions();
   if(NET&&G.daily)rpc('daily_status').then(function(st){S.dst=st;var e=$('#live');if(!e||!st.rank)return;e.hidden=false;e.textContent='En direct : '+ord(st.rank)+' sur '+st.players_at_step+' joueur'+(st.players_at_step>1?'s':'')+' après '+st.answered+' question'+(st.answered>1?'s':'')}).catch(function(){});
   function isFlag(){return FLAGS.some(function(f){return f.id===q.id})}
@@ -1557,7 +1566,7 @@ function reveal(){
 function rowsOf(set,ans){
   return set.map(function(q,i){var a=ans[i];return '<li class="'+dc(q)+'"><span class="tile '+a.tier+'" aria-hidden="true"></span><div class="grow"><p class="t">'+esc(q.t)+'</p><p class="small"><span class="dchip">'+q.dom+'</span> <span class="muted">'+(a.tier==='out'?'dehors':'dedans')+'</span></p></div><b>'+a.pts+'</b></li>'}).join('');
 }
-var KEY='<div class="key"><span><i class="tile tight"></i>Bien centré</span><span><i class="tile wide"></i>Décentré</span><span><i class="tile out"></i>Dehors</span></div>';
+var KEY='<div class="key"><span><i class="tile tight"></i>Serré</span><span><i class="tile wide"></i>Large</span><span><i class="tile out"></i>Dehors</span></div>';
 function bilan(){
   if(G.duel)return duelEnd();
   S.view='bilan';S.tab='home';
@@ -1850,16 +1859,19 @@ function collectionView(th){
   }
   var pr2=NET?rpc('my_cards',{p_theme:th,p_offset:0}):Promise.resolve((function(){var u={};LOG.forEach(function(e){if(e.d===th&&e.i&&e.q)u[e.q]=Math.max(u[e.q]||0,e.c||0)});return Object.keys(u).map(function(id){var q=BYID[id];return q?{i:id,t:q.t,u:q.unit,v:q.truth,f:q.fk,x:q.fact,best:u[id]}:null}).filter(Boolean)})());
   pr2.then(function(cs){
-    el.innerHTML=cs.length?'<div class="card"><ul class="cards">'+cs.map(function(c){var f=FM[c.f]||fnice;return '<li><p class="small muted">'+esc(c.i)+(c.best?' · centrage max '+Math.round(c.best*100)+' %':'')+'</p><p style="font-weight:600">'+esc(c.t)+'</p><p class="a">'+f(c.v)+(c.u?' <span class="small muted">'+esc(c.u)+'</span>':'')+'</p><p class="x">'+esc(c.x||'')+'</p></li>'}).join('')+'</ul></div>':
+    el.innerHTML=cs.length?'<div class="card"><ul class="cards">'+cs.map(function(c){var f=FM[c.f]||fnice;return '<li><p class="small muted">'+esc(c.i)+(c.best?' · meilleure précision '+Math.round(c.best*100)+' %':'')+'</p><p style="font-weight:600">'+esc(c.t)+'</p><p class="a">'+f(c.v)+(c.u?' <span class="small muted">'+esc(c.u)+'</span>':'')+'</p><p class="x">'+esc(c.x||'')+'</p></li>'}).join('')+'</ul></div>':
       '<p class="small muted" style="text-align:center;margin:20px 0">Aucune carte dans ce thème pour l’instant : réussissez une question pour la débloquer.</p>';
   }).catch(function(e){el.innerHTML='<p class="small muted">'+esc(e.message)+'</p>'});
 }
+/* Calibration : avec la fourchette libre, viser juste 100 % du temps veut dire qu'elle est trop large */
+function calib(ok,cur){return !ok?'Pas encore assez de données':(cur<55?'Trop sûr de vous : élargissez':(cur<=90?'Bien dosé':'Trop prudent : resserrez'))}
 function profile(){
   S.view='profile';S.tab='profile';
   DAYS=daysData();
   var rl=LOG.filter(function(e){return !e.x}).slice(-50),cur=rl.length?Math.round(rl.reduce(function(x,e){return x+e.i},0)/rl.length*100):null;
   var okC=rl.length>=MINQ;
-  var conf=!okC?'Pas encore assez de données':(cur<35?'À affiner':(cur<60?'Solide':'Redoutable'));
+  var aw=(function(){var l=rl.filter(function(e){return e.w!=null});return l.length?Math.round(l.reduce(function(x,e){return x+e.w},0)/l.length*100):null})();
+  var conf=calib(okC,cur);
   var mpos=okC?cur:0,tpos=80;
   var dom=DN.map(function(d){var l=logOf(d).filter(function(e){return !e.x}),p=l.length?Math.round(l.reduce(function(x,e){return x+e.i},0)/l.length*100):null;return '<li class="'+dcn(d)+'"><span>'+d+'</span><div class="b"><i style="width:'+(p||0)+'%"></i></div><b>'+(p===null?'—':p+' %')+'</b></li>'}).join('');
   var lvl=DN.map(function(d){var a=avgOf(d),has=ST[d].n>0;return '<li class="'+dcn(d)+'"><span>'+d+'</span><div class="b"><i style="width:'+Math.min(100,Math.round(a/2))+'%"></i></div><b>'+(has?Math.round(a):'—')+'</b></li>'}).join('');
@@ -1871,7 +1883,7 @@ function profile(){
     if(!stt||Date.now()-(S.statsT||0)>15000){S.statsT=Date.now();rpc('my_stats').then(function(x){S.stats=x;S.statsT=Date.now();if(S.view==='profile')profile()}).catch(function(){})}
     if(stt){
       rl=new Array(stt.last50.n);cur=stt.last50.n?Math.round(stt.last50.hits/stt.last50.n*100):null;okC=rl.length>=MINQ;
-      conf=!okC?'Pas encore assez de données':(cur<35?'À affiner':(cur<60?'Solide':'Redoutable'));mpos=okC?cur:0;
+      aw=stt.last50.avgw!=null?Math.round(stt.last50.avgw*100):null;conf=calib(okC,cur);mpos=okC?cur:0;
       var TS={};(stt.themes||[]).forEach(function(t){TS[t.theme]=t});
       dom=DN.map(function(d){var t=TS[d],p2=t&&t.ne?Math.round(t.hits/t.ne*100):null;return '<li class="'+dcn(d)+'"><span>'+d+'</span><div class="b"><i style="width:'+(p2||0)+'%"></i></div><b>'+(p2===null?'—':p2+' %')+'</b></li>'}).join('');
       lvl=DN.map(function(d){var t=TS[d],a2=t&&t.n?t.s/t.n:0;return '<li class="'+dcn(d)+'"><span>'+d+'</span><div class="b"><i style="width:'+Math.min(100,Math.round(a2/2))+'%"></i></div><b>'+(t&&t.n?Math.round(a2):'—')+'</b></li>'}).join('');
@@ -1886,9 +1898,9 @@ function profile(){
    '<div class="tiles2"><button class="card" id="goColl" style="text-align:left"><p class="label">Collection</p><p style="font-weight:700;margin-top:4px">Vos cartes de questions</p></button><button class="card" id="goMis" style="text-align:left"><p class="label">Jokers de série</p><p style="font-weight:700;margin-top:4px">❄ '+(DAILY.jokers||0)+' / 3</p></button></div>'+
    misCard()+
    '<div class="card"><p class="label">Votre précision</p><p style="font-weight:700;font-size:18px;margin-top:2px">'+conf+'</p>'+
-   (okC?'<p class="small muted" style="margin-top:4px">Votre fourchette contient la bonne réponse '+cur+' fois sur 100.</p>'+
-   '<div class="meter" role="img" aria-label="Vous : '+cur+' %, repère : 80 %"><span class="mk" style="left:'+mpos+'%"></span><span class="l" style="left:'+mpos+'%">Vous '+cur+' %</span></div>'+
-   '<div class="scale"><span>Rarement</span><span>Toujours</span></div>':
+   (okC?'<p class="small muted" style="margin-top:4px">Votre fourchette contient la bonne réponse '+cur+' fois sur 100'+(aw!=null?', pour une largeur moyenne de '+aw+' % de l’échelle':'')+'. Le bon dosage se situe entre 55 et 90 : en dessous, vous prenez trop de risques ; au-dessus, vos fourchettes sont trop larges pour rapporter.</p>'+
+   '<div class="meter" role="img" aria-label="Vous : '+cur+' %, zone conseillée : 55 à 90 %"><span class="okz" style="left:55%;width:35%"></span><span class="mk" style="left:'+mpos+'%"></span><span class="l" style="left:'+mpos+'%">Vous '+cur+' %</span></div>'+
+   '<div class="scale"><span>Trop risqué</span><span>Trop prudent</span></div>':
    '<p class="small muted" style="margin-top:4px">Jouez au moins '+MINQ+' questions pour mesurer votre précision. Encore '+Math.max(0,MINQ-rl.length)+'.</p>')+'</div>'+
    '<div class="card"><p class="label">Fourchettes justes, jour par jour</p>'+(DAYS.length>=2?'<div class="chartwrap" style="margin-top:10px">'+chart()+'<div class="tip" id="tip" hidden></div></div>'+
    '<details><summary>Voir les valeurs</summary><table><thead><tr><th>Jour</th><th>Fourchettes justes</th></tr></thead><tbody>'+rows+'</tbody></table></details>':'<p class="small muted" style="margin-top:6px">Le graphique apparaît dès que vous avez joué sur deux jours différents.</p>')+'</div>'+
