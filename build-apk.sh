@@ -10,6 +10,12 @@ npx @capacitor/assets generate --android --iconBackgroundColor '#12062B' --splas
 grep -q 'screenOrientation' android/app/src/main/AndroidManifest.xml || \
   sed -i.bak 's#<activity#<activity android:screenOrientation="portrait"#' android/app/src/main/AndroidManifest.xml
 npx cap sync android
-(cd android && ./gradlew assembleDebug)
+# Signature avec la clé fixe du projet : les nouvelles versions s'installent par-dessus les anciennes
+KS="$PWD/signing/test-debug.keystore"
+(cd android && ./gradlew assembleDebug \
+  -Pandroid.injected.signing.store.file="$KS" \
+  -Pandroid.injected.signing.store.password=android \
+  -Pandroid.injected.signing.key.alias=androiddebugkey \
+  -Pandroid.injected.signing.key.password=android)
 echo
 echo "APK prêt : android/app/build/outputs/apk/debug/app-debug.apk"
